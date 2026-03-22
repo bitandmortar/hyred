@@ -1,10 +1,86 @@
 # hyred
 
-**CV & Cover Letter Generator**
+**Local-first CV & Cover Letter Generator**
 
-> git + hyred = Get Hired
+> Everything runs on your machine. No cloud APIs. No tracking. No data leaves your network.
 
-Everything runs natively on your machine. No external APIs. Complete privacy.
+Paste a job URL or description, let hyred scrape it, parse it, score it against your work history, and generate a tailored resume and cover letter — all via a local Ollama model running on your hardware.
+
+---
+
+## ✨ Features
+
+### Core Generation
+- **RAG-powered tailoring** — your documents are chunked, embedded, and stored in LanceDB; the top 10 most relevant chunks are retrieved per generation
+- **Local LLM inference** — Ollama backend (llama3.2, mistral, qwen2.5, or any model you have pulled); MLX-LM supported as alternative
+- **Strict anti-hallucination prompt** — LLM is instructed to use only facts from your actual work history
+- **DOCX + Markdown export** — download as `.md` or a properly formatted `.docx` (headings, bold, bullets, page margins)
+- **Tone slider** — maps 0 → formal (temp 0.3) through 100 → conversational (temp 0.85)
+
+### ATS Keyword Scorer
+- Frequency-weighted keyword extraction from the JD
+- Scores generated output 0–100 against top 50 JD terms
+- Displays matched keywords (green pills) and missing keywords (red pills) post-generation
+
+### Cover Letter Config
+- Persisted preferences in `hyred_data/cover_letter_config.json`
+- Opening style: hook / direct / question / achievement
+- Enthusiasm slider: Measured → Professional → Balanced → Enthusiastic → Passionate
+- Forbidden phrases list, max word count, custom sign-off, optional P.S.
+- Config injected as a system prompt addendum on every generation
+
+### Refinement Loop
+- After generation, a "Refine" expander lets you give targeted feedback
+- Prior output is fed back into the LLM with your notes: *"Shorten by 20%, drop Cerberus project, more emphasis on Rust"*
+- Each refinement is saved as a new version in history
+
+### Version History
+- Every generation auto-saved to SQLite (`hyred_data/version_history.db`)
+- Stores: company, role, ATS score, tone, model, full markdown content, timestamp
+- Browse, compare, reload any past version into session for further refinement
+
+### Job Queue & Comparison Pipeline
+- Bulk-import job URLs (one per line) or raw JD blocks separated by `---`
+- Each entry is scraped → structured-parsed → ATS pre-scored → salary-annotated → ghost-checked
+- Sort by ATS pre-score, seniority, location, or date
+- Filter by remote policy or hide stale/ghost listings
+- Location clustering (Remote, NYC, SF, London, etc.)
+- Select jobs for generation; selected queue pre-fills main page
+
+### Structured JD Parsing
+- Calls local Ollama to extract a typed object from each JD: required skills, nice-to-have, tech stack, seniority, remote policy, salary range, posted date
+- Regex heuristic fallback if the model doesn't return valid JSON
+- Parsed data feeds the ATS pre-scorer in the Job Queue
+
+### Salary Intelligence
+- Scrapes `levels.fyi` for market comp data (title + location)
+- Extracts stated salary range from JD text as fallback
+- Displays p25 / median / p75 as an info banner before generation
+
+### Ghost Job Detector
+- Parses posting date from JD text and URL patterns
+- Detects evergreen / talent-pool signals in the description
+- Verdicts: fresh (≤7d) / aging (≤45d) / stale (≤90d) / ghost (>90d or evergreen)
+- Warning banner shown when staleness is detected
+
+### Job Scraper — Site-Specific Extractors
+- LinkedIn, Indeed, ZipRecruiter, Glassdoor: dedicated parsers with JSON-LD `JobPosting` extraction
+- Greenhouse, Lever, Workday: generic extractor with multi-selector fallback
+- Auto-detects site from URL; routes accordingly
+- Auto-fills Company and Role fields from scraped data
+
+### Application Tracker
+- Full lifecycle: drafted → submitted → phone screen → technical → final round → offer / rejected / withdrawn
+- Kanban board grouped by stage
+- Per-application notes, follow-up reminders, URL link
+- Stats tab: total applied, response rate, offers, in-progress count
+
+### Interview Prep
+- Generates role-specific questions: behavioral (STAR), technical, situational, culture fit, "why us"
+- Answer by voice (Whisper) or text
+- Whisper transcription via `whisper.cpp` (Apple Silicon native, fastest) or `openai-whisper` Python package
+- Each answer scored by Ollama: relevance, specificity, JD alignment, structure
+- Score + critique + one improvement suggestion displayed per question
 
 ---
 
@@ -13,409 +89,300 @@ Everything runs natively on your machine. No external APIs. Complete privacy.
 ### 1. Install Dependencies
 
 ```bash
-# Navigate to app directory
-cd /Volumes/OMNI_01/10_SOURCE/10_Front_Gate/public/apps/local-resume-builder
-
-# Install Python packages
 pip install -r requirements.txt
 
-# Install Playwright browsers (for local scraping)
-playwright install
+# Playwright browsers (for local scraping)
+playwright install chromium
 ```
 
-### 2. Start Ollama (Local LLM Backend)
+### 2. Start Ollama
 
 ```bash
-# Start Ollama server
 ollama serve
 
-# In another terminal, pull a model (if not already installed)
+# Pull a model (if not already done)
 ollama pull llama3.2
 ```
 
-### 3. Create Your Documents Directory
+### 3. Add Your Documents
 
 ```bash
-# Create directory for your resume/CV files
 mkdir -p ./my_documents
-
-# Add your documents:
-# - Current resume (PDF, DOCX, or MD)
-# - Past project descriptions
-# - Performance reviews
-# - Any work history documents
 cp ~/Documents/resume.pdf ./my_documents/
 cp ~/Documents/cv.docx ./my_documents/
+# Add any: PDF, DOCX, MD, TXT — all auto-indexed on startup
 ```
 
-### 4. Run the Application
+### 4. Run
 
 ```bash
-# Start Streamlit app on localhost:8501
 streamlit run main_ui.py --server.port=8501 --server.address=0.0.0.0
 ```
 
-### 5. Access the App
+Open **http://localhost:8501**
 
-Open your browser to: **http://localhost:8501**
+### 5. First Run Checklist
+
+1. Enter your name in the sidebar **Profile** section
+2. Confirm the Ollama model you want to use
+3. Drop your resume/CV files into the upload zone or place them in `./my_documents/`
+4. Wait for the RAG engine to index them (status bar shows chunk count)
+5. Paste a job URL or description and click **Generate**
+
+---
+
+## 📁 File Structure
+
+```
+hyred/
+│
+├── main_ui.py                  # Main Streamlit app
+├── rag_engine.py               # Document ingestion & vector search (LanceDB)
+├── llm_agent.py                # Ollama / MLX-LM generation
+├── job_scraper.py              # Site-specific + generic job scraper
+├── file_watcher.py             # Watchdog auto-reindex on file change
+├── ats_scorer.py               # Frequency-weighted ATS keyword scorer
+├── export_utils.py             # Markdown → DOCX converter
+├── cover_letter_config.py      # CL preferences (persisted JSON)
+├── jd_parser.py                # Structured JD extraction via Ollama
+├── salary_scraper.py           # levels.fyi scraper + JD salary extraction
+├── ghost_detector.py           # Job posting staleness detector
+├── job_queue.py                # Batch job pipeline (SQLite)
+├── version_history.py          # Generation log (SQLite)
+│
+├── pages/
+│   ├── 01_Import_Documents.py
+│   ├── 02_Resume_Tools.py
+│   ├── 03_Auto_Generate.py
+│   ├── 04_Application_Tracker.py   # Kanban lifecycle tracker
+│   ├── 05_Interview_Prep.py        # Whisper + Ollama Q&A loop
+│   ├── 06_Skills_Gap.py
+│   ├── 07_CV_Versioning.py
+│   ├── 08_Job_Archive.py
+│   ├── 09_Job_Queue.py             # Bulk import & comparison pipeline
+│   └── 10_Version_History.py       # All saved generations
+│
+├── my_documents/               # Your resume/CV files (never exposed)
+├── lancedb_data/               # Local vector database (auto-generated)
+├── hyred_data/                 # App data
+│   ├── version_history.db      # SQLite — generation log
+│   ├── job_queue.db            # SQLite — job pipeline
+│   ├── applications.db         # SQLite — application tracker
+│   └── cover_letter_config.json
+│
+└── requirements.txt
+```
+
+---
+
+## 🔄 Typical Workflow
+
+### Single Job
+1. Paste a URL or job description into the main input
+2. If URL: click **Scrape** — company and role auto-fill
+3. Review the ghost job warning and salary banner (if data found)
+4. Click **Generate** — RAG retrieves relevant chunks, LLM generates
+5. Review the ATS score panel — note any missing keywords
+6. Use the **Refine** expander to give feedback and re-generate
+7. Download as `.md` or `.docx`
+
+### Batch Mode (Job Queue)
+1. Go to **🗂️ Job Queue → ➕ Add Jobs**
+2. Paste multiple URLs (one per line) and click **Process**
+3. Each job is scraped, parsed, ATS pre-scored, salary-annotated, and ghost-checked
+4. Go to **📊 Compare All** — sort by ATS score, filter by remote policy
+5. Select the jobs worth applying to
+6. Open each from **✅ Selected Queue** — it pre-fills the main page
+7. Generate, refine, download, track in **📋 Application Tracker**
+
+### Interview Prep
+1. Go to **🎙️ Interview Prep** (page 05)
+2. The JD from your last session is pre-loaded, or paste a new one
+3. Click **Generate Questions**
+4. Answer each question by voice (upload `.wav`/`.mp3`) or text
+5. Click **Score** — Ollama gives you a rating, critique, and one improvement suggestion
 
 ---
 
 ## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                 Cloudflare Tunnel                        │
-│            (cloudflared on your network)                │
-└────────────────────┬────────────────────────────────────┘
-                     │
-                     ▼
-        ┌────────────────────────┐
-        │   resume.yourdomain.com │
-        └───────────┬────────────┘
-                    │
-                    ▼
-    ┌───────────────────────────────┐
-    │   Streamlit App (localhost:8501) │
-    │   - main_ui.py                 │
-    └───────────┬───────────────────┘
-                │
-        ┌───────┼───────┬───────────┐
-        │       │       │           │
-        ▼       ▼       ▼           ▼
-   ┌────────┐ ┌──────┐ ┌────────┐ ┌──────────┐
-   │  RAG   │ │ LLM  │ │ Scraper│ │ Watcher  │
-   │ Engine │ │Agent │ │ Local  │ │ File     │
-   └───┬────┘ └──┬───┘ └───┬────┘ └────┬─────┘
-       │         │         │           │
-       ▼         ▼         ▼           ▼
-   ┌────────┐ ┌──────┐ ┌────────┐ ┌──────────┐
-   │LanceDB │ │Ollama│ │Playwright│ │watchdog │
-   │(local) │ │local │ │ (local) │ │ (local) │
-   └────────┘ └──────┘ └────────┘ └──────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                        Streamlit App                            │
+│                        main_ui.py  :8501                        │
+└──────┬──────────┬──────────┬──────────┬──────────┬─────────────┘
+       │          │          │          │          │
+       ▼          ▼          ▼          ▼          ▼
+  ┌─────────┐ ┌────────┐ ┌───────┐ ┌───────┐ ┌──────────┐
+  │   RAG   │ │  LLM   │ │Scraper│ │ ATS   │ │ SQLite   │
+  │ Engine  │ │ Agent  │ │       │ │Scorer │ │ (3 DBs)  │
+  └────┬────┘ └───┬────┘ └───┬───┘ └───────┘ └──────────┘
+       │          │          │
+       ▼          ▼          ▼
+  ┌─────────┐ ┌────────┐ ┌──────────────────────────────┐
+  │ LanceDB │ │ Ollama │ │ LinkedIn / Indeed / Glassdoor │
+  │ (local) │ │ :11434 │ │ ZipRecruiter / Greenhouse     │
+  └─────────┘ └────────┘ │ Lever / Workday / Generic     │
+                          └──────────────────────────────┘
 ```
+
+**Data stores:**
+- `lancedb_data/` — vector embeddings for RAG (Apache Arrow)
+- `hyred_data/version_history.db` — every generation, auto-saved
+- `hyred_data/job_queue.db` — batch job pipeline
+- `hyred_data/applications.db` — application lifecycle tracker
+- `hyred_data/cover_letter_config.json` — persisted CL preferences
 
 ---
 
-## 📁 Directory Structure
+## ⚙️ Configuration
 
-```
-/Local-App-Builder
-│
-├── /my_documents/          # Your resume files (NEVER exposed publicly)
-│   ├── resume.pdf
-│   ├── cv.docx
-│   ├── projects.md
-│   └── work_history.xlsx
-│
-├── /lancedb_data/          # Local vector database (auto-generated)
-│   ├── resume_chunks.lance
-│   └── index_metadata.json
-│
-├── main_ui.py              # Streamlit frontend (localhost:8501)
-├── rag_engine.py           # Document ingestion & vector search
-├── job_scraper.py          # Local Playwright scraper
-├── llm_agent.py            # Ollama/MLX-LM integration
-├── file_watcher.py         # Watchdog for auto-reindex
-└── requirements.txt        # Python dependencies
-```
+### Sidebar Settings (persisted per session)
+| Setting | Description |
+|---|---|
+| Your Name | Used in exported filenames |
+| Target Title | Informational — helps frame prompts |
+| Ollama Model | Populated live from `ollama list`; default `llama3.2` |
+| Cover Letter Tone | 0 = Formal (temp 0.3) → 100 = Conversational (temp 0.85) |
+| Cover Letter Style | Opening hook style, enthusiasm, max words, forbidden phrases |
+| NotebookLM toggle | Optional — requires Google authentication |
 
----
-
-## 🔧 Component Details
-
-### 1. `job_scraper.py` - Local HTML Parser
-
-**Purpose:** Extract job descriptions from URLs without external APIs
-
-**Features:**
-- Uses local Playwright instance (headless Chromium)
-- Bypasses JavaScript-heavy sites (Greenhouse, Lever, LinkedIn)
-- BeautifulSoup4 for HTML parsing
-- Fallback to manual paste if scraping fails
-
-**Usage:**
-```python
-from job_scraper import LocalJobScraper
-
-scraper = LocalJobScraper()
-result = scraper.scrape_url("https://company.greenhouse.io/jobs/123")
-
-print(result["job_title"])
-print(result["job_description"])
-```
-
-### 2. `rag_engine.py` - Local Knowledge Base
-
-**Purpose:** Convert documents to embeddings, store in LanceDB, retrieve relevant chunks
-
-**Features:**
-- MarkItDown for universal document conversion (PDF, DOCX, XLSX → Markdown)
-- sentence-transformers for local embeddings (all-MiniLM-L6-v2)
-- LanceDB for fast vector storage (Apache Arrow-based)
-- Automatic chunking with overlap (~500 words/chunk)
-- Section detection (experience, education, skills, projects)
-
-**Usage:**
-```python
-from rag_engine import get_rag_engine
-
-engine = get_rag_engine()
-engine.index_all_documents()  # Index ./my_documents/
-
-# Search for relevant chunks
-results = engine.search("Python data engineering", k=10)
-```
-
-### 3. `file_watcher.py` - Hot Reload
-
-**Purpose:** Automatically re-index documents when they change
-
-**Features:**
-- Watchdog library for file system monitoring
-- Debouncing to avoid rapid re-indexing
-- Supports: PDF, DOCX, XLSX, PPTX, HTML, MD, TXT
-- Runs in background thread (non-blocking)
-
-**Usage:**
-```python
-from file_watcher import start_file_watcher
-
-def on_change(file_path):
-    print(f"File changed: {file_path}")
-    # Re-index automatically
-
-start_file_watcher("./my_documents", on_change)
-```
-
-### 4. `llm_agent.py` - Local Generation
-
-**Purpose:** Generate tailored resume/cover letter using local LLM
-
-**Features:**
-- Ollama backend (llama3.2, mistral) or MLX-LM
-- Strict system prompt: NO hallucination, use ONLY RAG facts
-- ATS-friendly formatting
-- Quantified achievements from actual history
-
-**Usage:**
-```python
-from llm_agent import get_llm_agent
-
-agent = get_llm_agent()
-result = agent.generate_resume_and_cover_letter(
-    job_description,
-    rag_chunks
-)
-
-print(result["resume"])
-print(result["cover_letter"])
-```
-
-### 5. `main_ui.py` - Streamlit Dashboard
-
-**Purpose:** User interface for the entire workflow
-
-**Features:**
-- Dual input: URL scraping OR manual paste
-- Real-time status bar (indexed files, chunks, watcher status)
-- RAG context preview (see what chunks were retrieved)
-- Tabbed output (Resume / Cover Letter)
-- Download buttons (.md format)
+### Cover Letter Config (persisted to JSON)
+| Option | Values |
+|---|---|
+| Opening style | `hook` / `direct` / `question` / `achievement` |
+| Enthusiasm | 0 Measured → 25 Professional → 50 Balanced → 75 Enthusiastic → 100 Passionate |
+| Max words | 150–600 (default 350) |
+| Sign-off | Any string (default "Best regards") |
+| Forbidden phrases | One per line — LLM will never use these |
+| Custom instructions | Free-form additional directives |
 
 ---
 
-## 🔒 Cloudflare Tunnel Configuration
+## 🔧 Optional Enhancements
 
-### Secure Exposure via Cloudflare Tunnel
-
-**IMPORTANT:** This app is designed to run locally and be exposed securely via your existing Cloudflare Tunnel.
-
-#### Step 1: Ensure Streamlit Binds Correctly
-
+### Better PDF Ingestion (docling)
+IBM's `docling` library does layout-aware PDF extraction — preserves table structure, section headers, bullet hierarchy. Recommended if you have complex PDF CVs.
 ```bash
-# Run Streamlit with correct binding
-streamlit run main_ui.py \
-  --server.port=8501 \
-  --server.address=0.0.0.0 \
-  --server.headless=true \
-  --browser.gatherUsageStats=false
+pip install docling
 ```
+Then swap `MarkItDown` for `docling` in `rag_engine.py`.
 
-#### Step 2: Add to Cloudflare Tunnel Config
+### Voice Interview Prep (Whisper)
+```bash
+# Option 1: Apple Silicon native (fastest)
+brew install whisper-cpp
 
-Edit your cloudflared config (`/Volumes/OMNI_01/50_Ops/06_CLOUDFLARED/cloudflared/config.yml`):
+# Option 2: Python package
+pip install openai-whisper
+```
+Both are auto-detected by `pages/05_Interview_Prep.py`.
 
-```yaml
+### Cloudflare Tunnel (expose to a custom domain)
+```bash
+# Add to your cloudflared config.yml
 ingress:
-  - hostname: resume.yourdomain.com
+  - hostname: hyred.yourdomain.com
     service: http://localhost:8501
-  
-  - hostname: your-other-apps.yourdomain.com
-    service: http://localhost:8080
-  
-  - service: http_status:404  # Catch-all
-```
 
-#### Step 3: Restart Cloudflare Tunnel
-
-```bash
-# Restart cloudflared via supervisorctl
+# Restart tunnel
 supervisorctl -s unix:///tmp/pastyche_supervisor.sock restart cloudflared
 ```
-
-#### Step 4: Access Securely
-
-Your app is now accessible at: **https://resume.yourdomain.com**
-
-**Security Notes:**
-- ✅ All data stays on your local network
-- ✅ Cloudflare Tunnel provides encryption in transit
-- ✅ No public CORS permissions needed
-- ✅ Streamlit's built-in XSRF protection is active
-- ✅ No external API calls from the app
-
----
-
-## 🛡️ Security & Privacy Guarantees
-
-### What NEVER Leaves Your Network:
-- ❌ No document content sent to cloud
-- ❌ No embeddings generated externally
-- ❌ No job descriptions sent to APIs
-- ❌ No generated resumes stored externally
-- ❌ No browsing history tracked
-
-### What Runs 100% Locally:
-- ✅ MarkItDown (document conversion)
-- ✅ sentence-transformers (embeddings)
-- ✅ LanceDB (vector storage)
-- ✅ Ollama/MLX-LM (LLM inference)
-- ✅ Playwright (web scraping)
-- ✅ Watchdog (file monitoring)
-
----
-
-## 📊 Performance Benchmarks (M2 Mac)
-
-| Operation | Time |
-|-----------|------|
-| Document indexing (10 pages) | ~5 seconds |
-| Embedding generation (500 words) | ~0.5 seconds |
-| Vector search (10K chunks) | ~50ms |
-| Resume generation (llama3.2) | ~15 seconds |
-| Job scraping (Greenhouse) | ~3 seconds |
 
 ---
 
 ## 🔧 Troubleshooting
 
-### Ollama Not Connecting
-
+### Ollama not connecting
 ```bash
-# Check if Ollama is running
-ollama list
-
-# If not running, start it
 ollama serve
-
-# Pull a model if needed
-ollama pull llama3.2
+ollama pull llama3.2   # if no model pulled yet
 ```
 
-### Playwright Scraping Fails
-
+### Playwright scraping fails
 ```bash
-# Install Playwright browsers
-playwright install
-
-# Test scraping
-python job_scraper.py
+playwright install chromium
+python job_scraper.py  # test scrape
 ```
 
-### LanceDB Errors
-
+### LanceDB errors / stale index
 ```bash
-# Clear and rebuild vector database
 rm -rf ./lancedb_data
-python rag_engine.py  # Re-index all documents
+# Re-index on next startup, or click refresh in the UI
 ```
 
-### Streamlit Port Already in Use
-
+### Port 8501 already in use
 ```bash
-# Find process using port 8501
-lsof -i :8501
+lsof -ti :8501 | xargs kill -9
+streamlit run main_ui.py --server.port=8501
+```
 
-# Kill the process
-kill -9 <PID>
+### Whisper not found
+```bash
+# Fast (Apple Silicon):
+brew install whisper-cpp
 
-# Or use a different port
-streamlit run main_ui.py --server.port=8502
+# Or Python:
+pip install openai-whisper
 ```
 
 ---
 
-## 📝 Example Workflow
+## 📊 Performance (Apple Silicon M-series)
 
-1. **Add your documents** to `./my_documents/`
-   - Current resume (PDF/DOCX)
-   - Project descriptions (MD)
-   - Performance reviews (PDF)
-
-2. **Wait for auto-indexing** (or refresh in UI)
-   - File Watcher detects new files
-   - RAG Engine converts → chunks → embeds → stores
-
-3. **Enter job description**
-   - Paste URL (auto-scraped) OR
-   - Paste full job description
-
-4. **Click Generate**
-   - RAG searches for relevant chunks (top 10)
-   - LLM generates tailored resume + cover letter
-   - Uses ONLY facts from your actual history
-
-5. **Download & Apply**
-   - Download as .md files
-   - Convert to PDF if needed
-   - Apply to job!
+| Operation | Approx. time |
+|---|---|
+| Document indexing (10 pages) | ~5s |
+| Embedding generation (500 words) | ~0.5s |
+| Vector search (10K chunks) | ~50ms |
+| JD structured parse (llama3.2) | ~8s |
+| Resume + CL generation (llama3.2) | ~15–30s |
+| Whisper transcription (base, 1 min audio) | ~3s |
+| Job scraping (Greenhouse/Lever) | ~3s |
+| Job scraping (LinkedIn/Glassdoor) | partial — login required |
 
 ---
 
-## 🎯 Best Practices
+## 🛡️ Privacy
 
-### For Best Resume Matching:
-1. **Quantify your work:** Include numbers, metrics, scale
-2. **Be specific:** List exact tools, technologies, frameworks
-3. **Update regularly:** Add new projects as you complete them
-4. **Include context:** Project goals, your role, outcomes
+All of the following run entirely on-device:
 
-### For Best Generation Results:
-1. **Provide detailed job descriptions:** More context = better matching
-2. **Review RAG chunks:** Ensure relevant experience was retrieved
-3. **Edit generated output:** LLM provides draft, you refine
-4. **Verify facts:** Double-check all claims match your actual history
+- Document conversion (MarkItDown)
+- Text embedding (sentence-transformers / all-MiniLM-L6-v2)
+- Vector storage (LanceDB)
+- LLM inference (Ollama)
+- Job scraping (Playwright / requests + BeautifulSoup)
+- File monitoring (watchdog)
+- All SQLite databases
+
+The optional NotebookLM integration is the only feature that touches an external service, and it is **off by default** with an explicit toggle in the sidebar.
+
+---
+
+## 📦 Dependencies
+
+| Package | Purpose |
+|---|---|
+| `streamlit` | Frontend UI |
+| `lancedb` + `pyarrow` | Local vector database |
+| `sentence-transformers` + `torch` | Local embeddings |
+| `markitdown` | Universal document → Markdown converter |
+| `playwright` + `beautifulsoup4` + `requests` | Job scraping |
+| `watchdog` | File system monitoring |
+| `python-docx` | DOCX export |
+| `python-dotenv` | Environment config |
+
+**Optional:**
+- `openai-whisper` — interview prep voice transcription
+- `whisper-cpp` (brew) — faster Apple Silicon native alternative
+- `docling` — better layout-aware PDF ingestion
 
 ---
 
 ## 📄 License
 
-MIT License - Build your private resume builder, modify as needed.
+MIT — build your own private job search engine.
 
 ---
 
-## 🙏 Credits
-
-Built with:
-- **Streamlit** - Frontend UI
-- **LanceDB** - Local vector database
-- **sentence-transformers** - Local embeddings
-- **MarkItDown** - Microsoft's universal document converter
-- **Playwright** - Local browser automation
-- **Ollama** - Local LLM runtime
-- **Watchdog** - File system monitoring
-
----
-
-**Made with ❤️**
+*Built by [bitandmortar](https://github.com/bitandmortar)*

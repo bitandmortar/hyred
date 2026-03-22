@@ -1,0 +1,183 @@
+/*
+ * Custom Font Integration for Local Resume Builder
+ * Uses fonts from /Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/
+ */
+
+/* Barlow Font Family */
+@font-face {
+    font-family: 'Barlow';
+    src: url('/Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/Barlow-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Barlow';
+    src: url('/Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/Barlow-Medium.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Barlow';
+    src: url('/Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/Barlow-SemiBold.ttf') format('truetype');
+    font-weight: 600;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Barlow';
+    src: url('/Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/Barlow-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Barlow';
+    src: url('/Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/Barlow-ExtraBold.ttf') format('truetype');
+    font-weight: 800;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Barlow';
+    src: url('/Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/Barlow-Black.ttf') format('truetype');
+    font-weight: 900;
+    font-style: normal;
+}
+
+/* Inclusive Sans Font Family */
+@font-face {
+    font-family: 'Inclusive Sans';
+    src: url('/Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/InclusiveSans-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Inclusive Sans';
+    src: url('/Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/InclusiveSans-Medium.ttf') format('truetype');
+    font-weight: 500;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Inclusive Sans';
+    src: url('/Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/InclusiveSans-SemiBold.ttf') format('truetype');
+    font-weight: 600;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Inclusive Sans';
+    src: url('/Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/InclusiveSans-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+}
+
+/* Korolev Font Family */
+@font-face {
+    font-family: 'Korolev';
+    src: url('/Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/Korolev Thin.otf') format('opentype');
+    font-weight: 100;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Korolev';
+    src: url('/Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/Korolev Light.otf') format('opentype');
+    font-weight: 300;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Korolev';
+    src: url('/Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/Korolev Medium.otf') format('opentype');
+    font-weight: 500;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Korolev';
+    src: url('/Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/Korolev Bold.otf') format('opentype');
+    font-weight: 700;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Korolev';
+    src: url('/Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/Korolev Heavy.otf') format('opentype');
+    font-weight: 900;
+    font-style: normal;
+}
+
+/* Anthropic Font Family */
+@font-face {
+    font-family: 'Anthropic Sans';
+    src: url('/Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/AnthropicSans-Romans-Variable-25x258.ttf') format('truetype');
+    font-weight: 100 900;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Anthropic Sans';
+    src: url('/Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/AnthropicSans-Italics-Variable-25x258.ttf') format('truetype');
+    font-weight: 100 900;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Anthropic Serif';
+    src: url('/Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/AnthropicSerif-Romans-Variable-25x258.ttf') format('truetype');
+    font-weight: 100 900;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Anthropic Serif';
+    src: url('/Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/AnthropicSerif-Italics-Variable-25x258.ttf') format('truetype');
+    font-weight: 100 900;
+    font-style: italic;
+}
+
+/* Apply custom fonts to Streamlit elements */
+[data-testid="stHeading"] {
+    font-family: 'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+[data-testid="stSubheader"] {
+    font-family: 'Inclusive Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+[data-testid="stMarkdown"] {
+    font-family: 'Anthropic Serif', 'Georgia', serif !important;
+}
+
+[data-testid="stButton"] {
+    font-family: 'Barlow', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    font-weight: 600 !important;
+}
+
+[data-testid="stTextInput"] input,
+[data-testid="stTextArea"] textarea {
+    font-family: 'Inclusive Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+/* Custom styling for resume builder */
+.main-header {
+    font-family: 'Korolev', 'Barlow', sans-serif !important;
+    font-weight: 900 !important;
+    font-size: 2.5rem !important;
+    letter-spacing: -0.02em !important;
+}
+
+.status-badge {
+    font-family: 'Inclusive Sans', sans-serif !important;
+    font-weight: 600 !important;
+}
+
+/* PDF/Download buttons */
+.download-button {
+    font-family: 'Barlow', sans-serif !important;
+    font-weight: 700 !important;
+}

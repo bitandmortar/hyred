@@ -1,0 +1,38 @@
+# Local Resume Builder - Requirements
+# Zero-Data-Leak Resume Tailoring for M2 Mac
+# All dependencies run locally - NO cloud APIs
+
+# Frontend / App Server
+streamlit==1.32.0
+
+# Document Ingestion
+markitdown==0.0.1a3
+pypandoc==1.11  # For .pages and .odt conversion
+
+# Local Vector Database
+lancedb==0.5.1
+pyarrow==15.0.0
+
+# Local Text Embeddings
+sentence-transformers==2.3.1
+torch==2.2.0
+
+# Local Scraper
+playwright==1.42.0
+beautifulsoup4==4.12.3
+requests==2.31.0
+
+# File Synchronization
+watchdog==4.0.0
+
+# LLM Backend (choose one)
+# Option 1: Ollama (recommended - already installed via brew)
+# ollama==0.1.7
+
+# Option 2: MLX-LM (for Apple Silicon native)
+# mlx-lm==0.0.8
+# mlx==0.0.8
+
+# Utilities
+python-dotenv==1.0.1
+pathlib==1.0.1

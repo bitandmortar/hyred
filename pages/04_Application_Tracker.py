@@ -1,277 +1,198 @@
 #!/usr/bin/env python3
 """
-Application Tracker - Track job applications with status
+04 — Application Tracker
+==========================
+Full lifecycle tracking: submitted → response → interview → offer/rejection.
+SQLite-backed via version_history + job_queue data.
 """
-
 import streamlit as st
-from pathlib import Path
+import sqlite3
 import json
-from datetime import datetime
-import pandas as pd
+from pathlib import Path
+from datetime import datetime, date
+from typing import List, Dict
 
-st.set_page_config(page_title="Application Tracker", page_icon="📊", layout="wide")
+DB_PATH = Path("./hyred_data/applications.db")
 
-# Data file
-TRACKER_FILE = Path("./my_documents/application_tracker.json")
-
-
-def load_applications():
-    """Load applications from JSON file"""
-    if TRACKER_FILE.exists():
-        with open(TRACKER_FILE, "r") as f:
-            return json.load(f)
-    return []
-
-
-def save_applications(apps):
-    """Save applications to JSON file"""
-    TRACKER_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(TRACKER_FILE, "w") as f:
-        json.dump(apps, f, indent=2, default=str)
+STATUS_FLOW = ["drafted", "submitted", "no response", "response", "phone screen",
+               "technical", "final round", "offer", "rejected", "withdrawn", "archived"]
+STATUS_COLORS = {
+    "drafted":      "#9ca3af", "submitted":    "#6366f1", "no response":  "#d1d5db",
+    "response":     "#3b82f6", "phone screen": "#8b5cf6", "technical":    "#f59e0b",
+    "final round":  "#10b981", "offer":        "#22c55e", "rejected":     "#ef4444",
+    "withdrawn":    "#6b7280", "archived":     "#e5e7eb",
+}
 
 
-def add_application(company, role, url, status="Draft"):
-    """Add new application"""
-    apps = load_applications()
-    app = {
-        "id": datetime.now().strftime("%Y%m%d%H%M%S"),
-        "company": company,
-        "role": role,
-        "url": url,
-        "status": status,
-        "date_applied": None,
-        "date_updated": datetime.now().isoformat(),
-        "salary_range": "",
-        "location": "",
-        "tech_stack": "",
-        "notes": "",
-        "cv_version": "",
-        "cover_letter": "",
-    }
-    apps.append(app)
-    save_applications(apps)
-    return app
+def _get_conn():
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS applications (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_at      TEXT NOT NULL,
+            updated_at      TEXT,
+            company         TEXT,
+            role            TEXT,
+            location        TEXT,
+            url             TEXT,
+            status          TEXT DEFAULT 'submitted',
+            applied_date    TEXT,
+            response_date   TEXT,
+            interview_dates TEXT,
+            offer_amount    TEXT,
+            ats_score       INTEGER,
+            generation_id   INTEGER,
+            notes           TEXT,
+            contacts        TEXT,
+            follow_up_date  TEXT
+        )
+    """)
+    conn.commit()
+    return conn
 
 
-def update_application(app_id, **kwargs):
-    """Update application fields"""
-    apps = load_applications()
-    for app in apps:
-        if app["id"] == app_id:
-            app.update(kwargs)
-            app["date_updated"] = datetime.now().isoformat()
-            break
-    save_applications(apps)
+def add_application(company, role, location="", url="", status="submitted",
+                    applied_date=None, ats_score=0, generation_id=None, notes="") -> int:
+    conn = _get_conn()
+    cur = conn.execute("""
+        INSERT INTO applications
+            (created_at, updated_at, company, role, location, url, status,
+             applied_date, ats_score, generation_id, notes, interview_dates)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+    """, (datetime.now().isoformat(), datetime.now().isoformat(),
+          company, role, location, url, status,
+          applied_date or date.today().isoformat(),
+          ats_score, generation_id, notes, "[]"))
+    conn.commit()
+    rid = cur.lastrowid
+    conn.close()
+    return rid
 
 
-def delete_application(app_id):
-    """Delete application"""
-    apps = load_applications()
-    apps = [app for app in apps if app["id"] != app_id]
-    save_applications(apps)
+def list_applications() -> List[Dict]:
+    conn = _get_conn()
+    rows = conn.execute("SELECT * FROM applications ORDER BY updated_at DESC").fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 
-# Initialize session state
-if "applications" not in st.session_state:
-    st.session_state.applications = load_applications()
+def update_application(row_id: int, **kwargs):
+    kwargs["updated_at"] = datetime.now().isoformat()
+    sets = ", ".join(f"{k}=?" for k in kwargs)
+    conn = _get_conn()
+    conn.execute(f"UPDATE applications SET {sets} WHERE id=?", (*kwargs.values(), row_id))
+    conn.commit()
+    conn.close()
 
-# Header
-st.title("📊 Application Tracker")
-st.markdown("Track all your job applications in one place")
 
-st.divider()
+# ---- UI ----
+st.set_page_config(page_title="Application Tracker", page_icon="📋", layout="wide")
+st.markdown("# 📋 Application Tracker")
+st.caption("Track every application from first draft to offer or rejection.")
 
-# Add new application
-st.subheader("➕ New Application")
+tab_board, tab_add, tab_stats = st.tabs(["🗂️ Board", "➕ Add", "📊 Stats"])
 
-col1, col2, col3 = st.columns(3)
-with col1:
-    company = st.text_input("Company*", key="new_company")
-with col2:
-    role = st.text_input("Role*", key="new_role")
-with col3:
-    url = st.text_input("Job URL", key="new_url")
-
-col4, col5 = st.columns([4, 1])
-with col4:
-    status = st.selectbox(
-        "Status",
-        ["Draft", "Applied", "Interview", "Offer", "Rejected"],
-        key="new_status",
-    )
-with col5:
-    if st.button("➕ Add", use_container_width=True, key="add_app_btn"):
-        if company and role:
-            add_application(company, role, url, status)
-            st.session_state.applications = load_applications()
-            st.success("✅ Added!")
+with tab_add:
+    with st.form("add_app_form"):
+        c1, c2 = st.columns(2)
+        company = c1.text_input("Company *")
+        role = c2.text_input("Role *")
+        c3, c4 = st.columns(2)
+        location = c3.text_input("Location")
+        url = c4.text_input("Job URL")
+        c5, c6 = st.columns(2)
+        status = c5.selectbox("Initial Status", STATUS_FLOW, index=1)
+        applied_date = c6.date_input("Applied Date", value=date.today())
+        notes = st.text_area("Notes", height=80)
+        submitted = st.form_submit_button("Add Application", type="primary")
+        if submitted and company and role:
+            add_application(company, role, location, url, status,
+                            applied_date.isoformat(), notes=notes)
+            st.success(f"✅ Added: {role} @ {company}")
             st.rerun()
 
-st.divider()
 
-# Display applications
-st.subheader(f"📋 Applications ({len(st.session_state.applications)})")
+with tab_board:
+    apps = list_applications()
+    if not apps:
+        st.info("No applications tracked yet. Add one in the ➕ tab, or applications are auto-added when you generate from the main page.")
+    else:
+        # Group by status
+        status_filter = st.multiselect(
+            "Show statuses", STATUS_FLOW,
+            default=[s for s in STATUS_FLOW if s not in ("archived",)],
+        )
+        apps = [a for a in apps if a.get("status") in status_filter]
 
-if st.session_state.applications:
-    # Filter by status
-    status_filter = st.multiselect(
-        "Filter by Status",
-        options=["Draft", "Applied", "Interview", "Offer", "Rejected"],
-        default=["Draft", "Applied", "Interview", "Offer", "Rejected"],
-    )
-
-    filtered_apps = [
-        app for app in st.session_state.applications if app["status"] in status_filter
-    ]
-
-    if filtered_apps:
-        # Display as cards
-        for app in filtered_apps:
-            with st.container():
-                col6, col7, col8, col9, col10 = st.columns([2, 2, 1, 2, 1])
-
-                with col6:
-                    st.markdown(f"**{app['company']}**")
-                    st.caption(app["role"])
-
-                with col7:
-                    status_colors = {
-                        "Draft": "📝",
-                        "Applied": "✅",
-                        "Interview": "🎯",
-                        "Offer": "🎉",
-                        "Rejected": "❌",
-                    }
-                    st.caption(
-                        f"{status_colors.get(app['status'], '')} {app['status']}"
-                    )
-
-                with col8:
-                    if app.get("date_applied"):
-                        st.caption(f"📅 {app['date_applied']}")
-                    else:
-                        st.caption("Not applied")
-
-                with col9:
-                    if app.get("location"):
-                        st.caption(f"📍 {app['location']}")
-
-                with col10:
-                    if st.button("🗑️", key=f"del_{app['id']}"):
-                        delete_application(app["id"])
-                        st.session_state.applications = load_applications()
-                        st.rerun()
-
-                # Expandable details
-                with st.expander("📝 Details"):
-                    col11, col12 = st.columns(2)
-                    with col11:
-                        new_salary = st.text_input(
-                            "Salary Range",
-                            value=app.get("salary_range", ""),
-                            key=f"salary_{app['id']}",
-                        )
-                        new_location = st.text_input(
-                            "Location",
-                            value=app.get("location", ""),
-                            key=f"loc_{app['id']}",
-                        )
-                    with col12:
-                        new_stack = st.text_area(
-                            "Tech Stack",
-                            value=app.get("tech_stack", ""),
-                            key=f"stack_{app['id']}",
-                        )
-
-                    new_notes = st.text_area(
-                        "Notes", value=app.get("notes", ""), key=f"notes_{app['id']}"
-                    )
-
-                    # Update button
-                    if st.button("💾 Save Changes", key=f"save_{app['id']}"):
-                        update_application(
-                            app["id"],
-                            salary_range=new_salary,
-                            location=new_location,
-                            tech_stack=new_stack,
-                            notes=new_notes,
-                        )
-                        st.session_state.applications = load_applications()
-                        st.success("✅ Saved!")
-                        st.rerun()
-
-                    # Status change
+        # Kanban-style columns — group into 4 stage buckets
+        stages = {
+            "🔵 Applied": ["submitted", "drafted"],
+            "🟡 In Progress": ["response", "phone screen", "technical", "final round"],
+            "🟢 Outcome": ["offer"],
+            "🔴 Closed": ["rejected", "withdrawn", "no response", "archived"],
+        }
+        cols = st.columns(len(stages))
+        for col, (stage_label, statuses) in zip(cols, stages.items()):
+            stage_apps = [a for a in apps if a.get("status") in statuses]
+            col.markdown(f"**{stage_label}** ({len(stage_apps)})")
+            for a in stage_apps:
+                color = STATUS_COLORS.get(a.get("status", ""), "#9ca3af")
+                with col.expander(f"{a['company']} · {a['role'][:25]}"):
                     new_status = st.selectbox(
-                        "Update Status",
-                        ["Draft", "Applied", "Interview", "Offer", "Rejected"],
-                        index=[
-                            "Draft",
-                            "Applied",
-                            "Interview",
-                            "Offer",
-                            "Rejected",
-                        ].index(app["status"]),
-                        key=f"status_{app['id']}",
+                        "Status", STATUS_FLOW,
+                        index=STATUS_FLOW.index(a.get("status","submitted")),
+                        key=f"status_{a['id']}"
                     )
-                    if new_status != app["status"]:
-                        update_application(app["id"], status=new_status)
-                        if new_status == "Applied" and not app.get("date_applied"):
-                            update_application(
-                                app["id"],
-                                date_applied=datetime.now().strftime("%Y-%m-%d"),
-                            )
-                        st.session_state.applications = load_applications()
-                        st.success(f"✅ Status updated to {new_status}")
+                    if new_status != a.get("status"):
+                        update_application(a["id"], status=new_status)
                         st.rerun()
 
-                st.divider()
+                    st.markdown(f"📅 Applied: {a.get('applied_date','?')}")
+                    if a.get("ats_score"):
+                        st.markdown(f"📊 ATS: {a['ats_score']}")
+                    if a.get("url"):
+                        st.markdown(f"[🔗 Job posting]({a['url']})")
 
-# Stats
-st.divider()
-st.subheader("📈 Statistics")
+                    new_notes = st.text_area("Notes", value=a.get("notes",""), key=f"notes_{a['id']}", height=60)
+                    if st.button("Save notes", key=f"save_{a['id']}"):
+                        update_application(a["id"], notes=new_notes)
+                        st.success("Saved")
 
-if st.session_state.applications:
-    stats_col1, stats_col2, stats_col3, stats_col4 = st.columns(4)
+                    follow_up = st.date_input("Follow-up reminder", key=f"fu_{a['id']}")
+                    if st.button("Set reminder", key=f"rem_{a['id']}"):
+                        update_application(a["id"], follow_up_date=follow_up.isoformat())
 
-    with stats_col1:
-        st.metric("Total", len(st.session_state.applications))
+with tab_stats:
+    apps_all = list_applications()
+    if not apps_all:
+        st.info("No data yet.")
+    else:
+        total = len(apps_all)
+        offers = sum(1 for a in apps_all if a.get("status") == "offer")
+        rejected = sum(1 for a in apps_all if a.get("status") == "rejected")
+        in_progress = sum(1 for a in apps_all if a.get("status") in ("phone screen","technical","final round","response"))
+        response_rate = round((in_progress + offers + rejected) / total * 100) if total else 0
 
-    with stats_col2:
-        applied = len(
-            [a for a in st.session_state.applications if a["status"] == "Applied"]
-        )
-        st.metric("Applied", applied)
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Total Applied", total)
+        c2.metric("Response Rate", f"{response_rate}%")
+        c3.metric("Offers", offers)
+        c4.metric("In Progress", in_progress)
 
-    with stats_col3:
-        interviews = len(
-            [a for a in st.session_state.applications if a["status"] == "Interview"]
-        )
-        st.metric("Interviews", interviews)
-
-    with stats_col4:
-        offers = len(
-            [a for a in st.session_state.applications if a["status"] == "Offer"]
-        )
-        st.metric("Offers", offers)
-
-    # Conversion rates
-    if applied > 0:
-        interview_rate = (interviews / applied) * 100
-        st.caption(f"Interview Rate: {interview_rate:.1f}%")
-
-    if len(st.session_state.applications) > 0:
-        offer_rate = (offers / len(st.session_state.applications)) * 100
-        st.caption(f"Offer Rate: {offer_rate:.1f}%")
-
-# Export
-st.divider()
-if st.button("📥 Export to CSV"):
-    if st.session_state.applications:
-        df = pd.DataFrame(st.session_state.applications)
-        csv = df.to_csv(index=False)
-        st.download_button(
-            "📥 Download CSV",
-            csv,
-            f"applications_{datetime.now().strftime('%Y%m%d')}.csv",
-            "text/csv",
-        )
+        st.divider()
+        st.subheader("By Status")
+        from collections import Counter
+        status_counts = Counter(a.get("status","?") for a in apps_all)
+        for status, count in sorted(status_counts.items(), key=lambda x: -x[1]):
+            color = STATUS_COLORS.get(status, "#9ca3af")
+            bar_width = int(count / total * 100)
+            st.markdown(
+                f"<div style='margin-bottom:6px'>"
+                f"<span style='width:120px;display:inline-block'>{status}</span>"
+                f"<span style='background:{color};display:inline-block;height:16px;"
+                f"width:{bar_width}%;border-radius:4px;vertical-align:middle'></span>"
+                f" <b>{count}</b></div>",
+                unsafe_allow_html=True,
+            )

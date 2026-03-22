@@ -1,175 +1,237 @@
 #!/usr/bin/env python3
 """
-Interview Prep Generator - Generate Q&A from CV + job requirements
+05 — Interview Prep (Whisper + Ollama)
+========================================
+Generate role-specific questions → answer out loud → Whisper transcribes →
+Ollama scores your answer against the JD → instant feedback loop.
+Fully local: whisper.cpp or openai-whisper + Ollama.
 """
-
 import streamlit as st
+import subprocess
+import tempfile
+import json
+import requests
 from pathlib import Path
-from rag_engine import get_rag_engine
-from llm_agent import get_llm_agent
 
-st.set_page_config(page_title="Interview Prep", page_icon="🎯", layout="wide")
+OLLAMA_URL = "http://localhost:11434"
 
-st.title("🎯 Interview Prep Generator")
-st.markdown("Generate likely interview questions and suggested answers")
+st.set_page_config(page_title="Interview Prep", page_icon="🎙️", layout="wide")
+st.markdown("# 🎙️ Interview Prep")
+st.caption("Generate questions, answer out loud, get scored. All local via Whisper + Ollama.")
+
+# ---- Whisper availability check ----
+def _check_whisper_cpp() -> bool:
+    try:
+        r = subprocess.run(["whisper-cpp", "--version"], capture_output=True, timeout=3)
+        return r.returncode == 0
+    except Exception:
+        return False
+
+def _check_whisper_py() -> bool:
+    try:
+        import whisper  # noqa
+        return True
+    except ImportError:
+        return False
+
+def transcribe_audio_file(audio_path: str, model: str = "base") -> str:
+    """Transcribe using whisper.cpp (preferred) or openai-whisper Python package."""
+    # Try whisper.cpp first (faster on Apple Silicon)
+    if _check_whisper_cpp():
+        try:
+            result = subprocess.run(
+                ["whisper-cpp", "-m", f"models/ggml-{model}.bin",
+                 "-f", audio_path, "--output-txt", "--no-prints"],
+                capture_output=True, text=True, timeout=60,
+            )
+            txt_path = Path(audio_path).with_suffix(".txt")
+            if txt_path.exists():
+                return txt_path.read_text().strip()
+        except Exception:
+            pass
+
+    # Fall back to openai-whisper Python package
+    try:
+        import whisper
+        wm = whisper.load_model(model)
+        result = wm.transcribe(audio_path)
+        return result["text"].strip()
+    except ImportError:
+        return ""
+    except Exception as e:
+        return f"Transcription error: {e}"
+
+def _ollama_generate(prompt: str, model: str = "llama3.2", temperature: float = 0.4) -> str:
+    try:
+        resp = requests.post(
+            f"{OLLAMA_URL}/api/generate",
+            json={"model": model, "prompt": prompt, "stream": False,
+                  "options": {"temperature": temperature, "num_predict": 600}},
+            timeout=60,
+        )
+        return resp.json().get("response", "").strip()
+    except Exception as e:
+        return f"LLM error: {e}"
+
+def generate_questions(job_description: str, model: str, n: int = 8) -> list:
+    prompt = f"""Generate {n} interview questions for this job role.
+Mix: 2 behavioral (STAR format), 2 technical, 2 situational, 1 culture fit, 1 "why us".
+Return ONLY a JSON array of strings — no markdown, no preamble.
+
+JOB DESCRIPTION:
+{job_description[:3000]}
+"""
+    raw = _ollama_generate(prompt, model, temperature=0.6)
+    import re
+    raw = re.sub(r"```(?:json)?", "", raw).strip().rstrip("`").strip()
+    match = re.search(r"\[.*\]", raw, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group())
+        except Exception:
+            pass
+    # Fallback: split by newlines
+    lines = [l.strip().lstrip("0123456789.-) ") for l in raw.splitlines() if l.strip()]
+    return [l for l in lines if len(l) > 15][:n]
+
+def score_answer(question: str, answer: str, job_description: str, model: str) -> str:
+    prompt = f"""You are an interviewer scoring a candidate's answer.
+
+JOB DESCRIPTION (abbreviated):
+{job_description[:1500]}
+
+QUESTION: {question}
+
+CANDIDATE'S ANSWER: {answer}
+
+Score the answer on:
+1. Relevance (does it address the question?)
+2. Specificity (concrete examples vs vague?)
+3. Alignment (does it match the job requirements?)
+4. Structure (clear and concise?)
+
+Give: a score out of 10, a one-paragraph critique, and one specific improvement suggestion.
+Be honest and constructive. Format as:
+Score: X/10
+Critique: ...
+Improve: ...
+"""
+    return _ollama_generate(prompt, model, temperature=0.3)
+
+
+# ---- Main UI ----
+model = st.session_state.get("selected_model", "llama3.2")
+
+# Whisper status
+has_whisper = _check_whisper_cpp() or _check_whisper_py()
+if not has_whisper:
+    st.warning(
+        "⚠️ Whisper not found. Install with:  \n"
+        "`pip install openai-whisper`  \n"
+        "Or for Apple Silicon native speed: `brew install whisper-cpp`  \n"
+        "You can still use text mode."
+    )
+
+# Job description source
+jd = st.session_state.get("job_description", "")
+if not jd:
+    jd = st.text_area(
+        "Paste job description (or go to main page first)",
+        height=120,
+        placeholder="Paste the job description here to generate targeted questions…",
+    )
+else:
+    st.success(f"✅ Using JD from session: {jd[:80]}…")
+    if st.button("Clear JD"):
+        st.session_state.job_description = ""
+        st.rerun()
 
 st.divider()
 
-# Input section
-col1, col2 = st.columns(2)
+col_settings, col_practice = st.columns([1, 3])
 
-with col1:
-    st.subheader("📋 Job Description")
-    job_desc = st.text_area(
-        "Paste job description",
-        height=300,
-        placeholder="Paste the full job description here...",
-    )
+with col_settings:
+    st.subheader("⚙️ Settings")
+    n_questions = st.slider("Number of questions", 3, 15, 8)
+    whisper_model = st.selectbox("Whisper model", ["tiny", "base", "small", "medium"], index=1,
+                                 help="Larger = more accurate but slower. 'base' recommended for real-time.")
+    answer_mode = st.radio("Answer mode", ["🎤 Voice (Whisper)", "⌨️ Text"], index=0 if has_whisper else 1)
 
-with col2:
-    st.subheader("🏢 Company Info")
-    company = st.text_input("Company", placeholder="e.g., Satsyil Corp")
-    role = st.text_input("Role", placeholder="e.g., Senior Databricks Architect")
+    if st.button("🎲 Generate Questions", type="primary", disabled=not jd):
+        with st.spinner("Generating questions…"):
+            qs = generate_questions(jd, model, n_questions)
+            st.session_state["prep_questions"] = qs
+            st.session_state["prep_answers"] = {}
+            st.session_state["prep_scores"] = {}
+        st.rerun()
 
-    st.divider()
-
-    # Interview type
-    interview_type = st.selectbox(
-        "Interview Type",
-        [
-            "Technical",
-            "Behavioral",
-            "System Design",
-            "Manager",
-            "HR Screening",
-            "Final Round",
-        ],
-    )
-
-    # Experience level
-    experience_level = st.selectbox(
-        "Experience Level", ["Junior", "Mid-Level", "Senior", "Staff", "Principal"]
-    )
-
-st.divider()
-
-# Generate button
-if st.button("🚀 Generate Interview Prep", use_container_width=True):
-    if not job_desc:
-        st.warning("⚠️ Please paste a job description")
-    elif not company or not role:
-        st.warning("⚠️ Please enter company and role")
+with col_practice:
+    questions = st.session_state.get("prep_questions", [])
+    if not questions:
+        st.info("Click **Generate Questions** to start a practice session.")
     else:
-        with st.spinner("🤖 Generating interview questions..."):
-            # Get RAG engine
-            rag_engine = get_rag_engine()
+        st.subheader(f"📝 {len(questions)} Questions")
+        for i, q in enumerate(questions):
+            with st.expander(f"Q{i+1}: {q[:70]}{'…' if len(q) > 70 else ''}", expanded=(i == 0)):
+                st.markdown(f"**{q}**")
 
-            # Search for relevant experience
-            rag_results = rag_engine.search(job_desc, k=10)
+                answer_key = f"ans_{i}"
+                score_key = f"score_{i}"
 
-            # Get LLM agent
-            llm_agent = get_llm_agent()
-
-            # Build prompt
-            prompt = f"""You are an expert interview coach. Generate interview questions and suggested answers for:
-
-**Company:** {company}
-**Role:** {role}
-**Interview Type:** {interview_type}
-**Experience Level:** {experience_level}
-
-**Job Description:**
-{job_desc}
-
-**Candidate's Experience (from RAG context):**
-"""
-
-            for i, chunk in enumerate(rag_results, 1):
-                prompt += f"\n{i}. {chunk['text'][:200]}..."
-
-            prompt += """
-
-**Generate:**
-1. 5-10 likely interview questions for this specific role and company
-2. For each question, provide a suggested answer using the candidate's actual experience from the RAG context
-3. Include follow-up questions they might ask
-4. Mark which skills/requirements from the job description each question addresses
-
-**Format:**
-### Question 1: [Question text]
-**Addresses:** [Skill/requirement from job description]
-**Suggested Answer:** [Answer using candidate's actual experience]
-**Follow-up:** [Likely follow-up question]
-
-### Question 2: ...
-"""
-
-            # Generate
-            if llm_agent.available:
-                result = llm_agent._generate_with_ollama(prompt)
-
-                if result.get("resume"):
-                    st.success("✅ Generated!")
-
-                    # Display questions
-                    st.markdown(result["resume"])
-
-                    # Download button
-                    st.download_button(
-                        "📥 Download as Markdown",
-                        result["resume"],
-                        f"{company}_{role}_Interview_Prep.md",
-                        "text/markdown",
+                if answer_mode == "⌨️ Text":
+                    answer = st.text_area(
+                        "Your answer", height=100,
+                        value=st.session_state.get("prep_answers", {}).get(str(i), ""),
+                        key=f"ta_{i}",
                     )
-            else:
-                st.error("❌ LLM not available. Please ensure Ollama is running.")
+                    if st.button("📊 Score my answer", key=f"score_btn_{i}", disabled=not answer):
+                        with st.spinner("Scoring…"):
+                            feedback = score_answer(q, answer, jd, model)
+                            if "prep_answers" not in st.session_state:
+                                st.session_state["prep_answers"] = {}
+                            if "prep_scores" not in st.session_state:
+                                st.session_state["prep_scores"] = {}
+                            st.session_state["prep_answers"][str(i)] = answer
+                            st.session_state["prep_scores"][str(i)] = feedback
+                            st.rerun()
 
-st.divider()
+                elif answer_mode == "🎤 Voice (Whisper)" and has_whisper:
+                    st.caption("Record your answer, then upload the audio file below.")
+                    audio_file = st.file_uploader(
+                        "Upload audio (.wav / .mp3 / .m4a)",
+                        type=["wav", "mp3", "m4a", "ogg"],
+                        key=f"audio_{i}",
+                    )
+                    if audio_file and st.button("🎙️ Transcribe & Score", key=f"ts_btn_{i}"):
+                        with tempfile.NamedTemporaryFile(suffix=Path(audio_file.name).suffix, delete=False) as tmp:
+                            tmp.write(audio_file.getbuffer())
+                            tmp_path = tmp.name
+                        with st.spinner("Transcribing…"):
+                            transcript = transcribe_audio_file(tmp_path, whisper_model)
+                        st.info(f"📝 Transcript: {transcript}")
+                        if transcript and not transcript.startswith("Transcription error"):
+                            with st.spinner("Scoring…"):
+                                feedback = score_answer(q, transcript, jd, model)
+                                st.session_state.setdefault("prep_answers", {})[str(i)] = transcript
+                                st.session_state.setdefault("prep_scores", {})[str(i)] = feedback
+                                st.rerun()
 
-# Tips section
-with st.expander("💡 Interview Tips"):
-    st.markdown("""
-    ### Technical Interviews
-    
-    **Before:**
-    - Review the job requirements
-    - Practice coding problems
-    - Prepare system design examples
-    
-    **During:**
-    - Think out loud
-    - Ask clarifying questions
-    - Explain your thought process
-    
-    ### Behavioral Interviews
-    
-    **STAR Method:**
-    - **S**ituation: Describe the context
-    - **T**ask: Explain your responsibility
-    - **A**ction: Detail what you did
-    - **R**esult: Share the outcome
-    
-    ### System Design
-    
-    **Framework:**
-    1. Requirements clarification
-    2. High-level design
-    3. Detailed design
-    4. Bottleneck analysis
-    5. Scaling considerations
-    """)
+                # Show score if available
+                score_text = st.session_state.get("prep_scores", {}).get(str(i))
+                if score_text:
+                    lines = score_text.splitlines()
+                    score_line = next((l for l in lines if l.startswith("Score:")), "")
+                    color = "#10b981" if "8" in score_line or "9" in score_line or "10" in score_line else (
+                        "#f59e0b" if "6" in score_line or "7" in score_line else "#ef4444"
+                    )
+                    st.markdown(
+                        f"<div style='background:#f9fafb;border-left:4px solid {color};"
+                        f"padding:12px;border-radius:4px;margin-top:8px'>{score_text}</div>",
+                        unsafe_allow_html=True,
+                    )
 
-# Sidebar - Recent prep
-with st.sidebar:
-    st.subheader("📚 Recent Prep Sessions")
-
-    prep_dir = Path("./my_documents/interview_prep")
-    if prep_dir.exists():
-        prep_files = list(prep_dir.glob("*.md"))
-        if prep_files:
-            for f in sorted(prep_files, key=lambda x: x.stat().st_mtime, reverse=True)[
-                :5
-            ]:
-                st.caption(f"📄 {f.name}")
-        else:
-            st.caption("No prep sessions yet")
+        # Session summary
+        scores = st.session_state.get("prep_scores", {})
+        if len(scores) == len(questions):
+            st.balloons()
+            st.success(f"🎉 Session complete! Answered all {len(questions)} questions.")

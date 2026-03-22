@@ -28,6 +28,13 @@ watchdog==4.0.0
 # Export
 python-docx==1.1.0
 
+# Interview Prep (choose one or both)
+# openai-whisper==20231117   # pip install openai-whisper
+# whisper-cpp via brew:      # brew install whisper-cpp
+
+# Optional: better PDF ingestion (replaces markitdown for PDF)
+# docling>=1.0.0
+
 # LLM Backend (choose one)
 # Option 1: Ollama (recommended - already installed via brew)
 # ollama==0.1.7

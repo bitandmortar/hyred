@@ -61,53 +61,140 @@ st.markdown("""
         font-style: normal;
     }
 
-    /* Fallback / Optional Fonts */
-    @font-face { font-family:'Barlow'; src:local('Barlow'),
-        url('file:///Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/Barlow-Regular.ttf') format('truetype');
-        font-weight:400; }
-    @font-face { font-family:'Barlow'; src:local('Barlow Bold'),
-        url('file:///Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/Barlow-Bold.ttf') format('truetype');
-        font-weight:700; }
-    @font-face { font-family:'Inclusive Sans'; src:local('Inclusive Sans'),
-        url('file:///Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/InclusiveSans-Regular.ttf') format('truetype'); }
-    @font-face { font-family:'Korolev'; src:local('Korolev'),
-        url('file:///Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/Korolev Bold.otf') format('opentype');
-        font-weight:700; }
+    /* TYPOGRAPHY */
+    [data-testid="stMarkdown"], p, li, span, div, label {
+        font-family: 'Anthropic Sans', sans-serif !important;
+        line-height: 1.6 !important;
+    }
 
-    /* Default UI Priority: Anthropic */
     .main-header {
-        font-family: 'Anthropic Serif', 'Korolev', 'Barlow', serif !important;
+        font-family: 'Anthropic Serif', serif !important;
         font-weight: 900 !important;
-        font-size: 3rem !important;
-        letter-spacing: -0.01em !important;
-        background: linear-gradient(90deg, #fff, #94a3b8);
+        font-size: 3.5rem !important;
+        letter-spacing: -0.02em !important;
+        margin-bottom: -0.5rem;
+        background: linear-gradient(135deg, #fff 30%, #475569);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-    }
-    
-    [data-testid="stHeading"], [data-testid="stSubheader"] {
-        font-family: 'Anthropic Sans', 'Barlow', -apple-system, sans-serif !important;
-        font-weight: 700 !important;
-    }
-    
-    [data-testid="stMarkdown"], p, li, span, div {
-        font-family: 'Anthropic Sans', 'Inclusive Sans', 'Barlow', sans-serif !important;
-        font-weight: 400 !important;
-        line-height: 1.62 !important;
-    }
-    
-    [data-testid="stButton"]>button {
-        font-family: 'Anthropic Sans', 'Barlow', sans-serif !important;
-        font-weight: 600 !important;
-        letter-spacing: 0.01em !important;
-        border-radius: 8px !important;
+        text-align: center;
     }
 
-    .ats-pill-match { display:inline-block; background:#d1fae5; color:#065f46;
-        border-radius:9999px; padding:2px 10px; margin:2px; font-size:.78rem; font-weight:600; }
-    .ats-pill-miss  { display:inline-block; background:#fee2e2; color:#991b1b;
-        border-radius:9999px; padding:2px 10px; margin:2px; font-size:.78rem; font-weight:600; }
-    .ats-score-big  { font-size:3rem; font-weight:900; line-height:1; }
+    .sub-brand {
+        font-family: 'Anthropic Sans', sans-serif !important;
+        text-transform: uppercase;
+        letter-spacing: 0.4em;
+        font-size: 0.7rem;
+        color: var(--accent);
+        opacity: 0.8;
+        text-align: center;
+        margin-bottom: 2rem;
+        text-shadow: 0 0 10px var(--accent-glow);
+    }
+
+    /* GLASSMORPHISM CONTAINERS */
+    [data-testid="stVerticalBlock"] > [data-testid="stVerticalBlock"] {
+        background: var(--panel);
+        backdrop-filter: blur(25px);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 1.8rem;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        margin-bottom: 1.5rem;
+        transition: border-color 0.4s ease;
+    }
+    [data-testid="stVerticalBlock"] > [data-testid="stVerticalBlock"]:hover {
+        border-color: rgba(0, 255, 202, 0.5);
+    }
+
+    /* SIDEBAR GLASS */
+    [data-testid="stSidebar"] {
+        background-color: rgba(6, 8, 12, 0.95) !important;
+        border-right: 1px solid var(--border);
+        backdrop-filter: blur(15px);
+    }
+
+    /* BUTTONS */
+    [data-testid="stButton"]>button {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01)) !important;
+        border: 1px solid var(--border) !important;
+        color: #fff !important;
+        border-radius: 12px !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.1em !important;
+        padding: 0.6rem 2rem !important;
+        transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1) !important;
+    }
+    [data-testid="stButton"]>button:hover {
+        background: var(--accent) !important;
+        color: #030407 !important;
+        box-shadow: 0 0 15px var(--accent-glow) !important;
+        transform: translateY(-2px);
+    }
+
+    /* ATS PANEL MODS */
+    .ats-score-container {
+        background: radial-gradient(circle at center, rgba(0, 255, 202, 0.1) 0%, transparent 70%);
+        padding: 2rem;
+        border-radius: 50%;
+        width: 180px;
+        height: 180px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        margin: 0 auto 1rem;
+        border: 2px solid var(--border);
+    }
+    .ats-score-big { 
+        font-size: 4rem !important; 
+        font-weight: 900 !important; 
+        line-height: 1 !important; 
+        margin: 0 !important;
+    }
+
+    .ats-pill-match { background:rgba(0, 255, 202, 0.1); color:var(--accent); border: 1px solid var(--border); border-radius: 6px; }
+    .ats-pill-miss  { background:rgba(244, 112, 103, 0.1); color:#f47067; border: 1px solid rgba(244, 112, 103, 0.2); border-radius: 6px; }
+
+    /* NEURAL CONNECTORS: SVG STYLES */
+    .neural-bridge-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: -1;
+        opacity: 0.6;
+    }
+    .neural-path {
+        fill: none;
+        stroke: var(--accent);
+        stroke-width: 1.5;
+        stroke-linecap: round;
+        stroke-dasharray: 10, 20;
+        animation: flow 3s linear infinite;
+        opacity: 0.3;
+    }
+    @keyframes flow {
+        from { stroke-dashoffset: 60; }
+        to { stroke-dashoffset: 0; }
+    }
+    
+    .glass-card {
+        background: var(--panel) !important;
+        backdrop-filter: blur(25px) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: 20px !important;
+        padding: 2rem !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+        min-height: 80vh !important;
+    }
+
+    /* Hide Streamlit elements */
+    header[data-testid="stHeader"] { visibility: hidden; }
+    div[data-testid="stStatusWidget"] { visibility: hidden; }
+    footer { visibility: hidden; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -274,24 +361,31 @@ def display_status_bar():
 def render_ats_panel(job_description: str, generated_text: str):
     r = score_ats_match(job_description, generated_text)
     score = r["score"]
-    color = "#10b981" if score >= 70 else ("#f59e0b" if score >= 45 else "#ef4444")
-    label = "Strong match" if score >= 70 else ("Decent match" if score >= 45 else "Needs work")
-    st.markdown(
-        f'<div style="border:1px solid {color};border-radius:12px;padding:16px 20px;margin-bottom:8px">'
-        f'<span class="ats-score-big" style="color:{color}">{score}</span>'
-        f'<span style="font-size:1.1rem;color:{color};margin-left:8px">/ 100 — {label}</span>'
-        f'<div style="font-size:.8rem;color:#6b7280;margin-top:4px">'
-        f'{r["matched_count"]} of {r["total_jd_keywords"]} key JD terms found</div></div>',
-        unsafe_allow_html=True)
+    color = "#00ffca" if score >= 70 else ("#facc15" if score >= 45 else "#f47067")
+    label = "OPTIMIZED" if score >= 70 else ("DECENT" if score >= 45 else "NEEDS WORK")
+    
+    st.markdown(f"""
+        <div style="text-align: center;">
+            <div class="ats-score-container" style="border-color: {color};">
+                <div class="metric-label" style="font-size: 0.6rem;">HYRED SCORE</div>
+                <div class="ats-score-big" style="color: {color};">{score}</div>
+                <div style="font-size: 0.6rem; color: {color}; letter-spacing: 0.2em; font-weight: 800;">{label}</div>
+            </div>
+            <div style="font-size: 0.75rem; color: #64748b; margin-bottom: 1.5rem;">
+                {r["matched_count"]} / {r["total_jd_keywords"]} CRITICAL KEYWORDS DETECTED
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+    
     cm, cx = st.columns(2)
     with cm:
-        st.markdown("**✅ Matched**")
+        st.markdown("**✅ ALIGNED**")
         st.markdown(" ".join(f'<span class="ats-pill-match">{k}</span>' for k in r["matched"]) or "_none_",
                     unsafe_allow_html=True)
     with cx:
-        st.markdown("**❌ Missing**")
+        st.markdown("**❌ GAP DETECTED**")
         st.markdown(" ".join(f'<span class="ats-pill-miss">{k}</span>' for k in r["missing"])
-                    or "🎉 All top terms covered!", unsafe_allow_html=True)
+                    or "🎉 FULL ALIGNMENT", unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------------------------
@@ -474,59 +568,60 @@ def render_results(job_description: str):
         return
 
     st.divider()
-    st.subheader("📝 Generated Documents")
+    
+    # ── Neural Mirror Bridge: Absolute SVG Layout Overlay ────────────
+    st.markdown("""
+        <div class="neural-bridge-container">
+            <svg width="100%" height="100%" viewBox="0 0 1200 1000" xmlns="http://www.w3.org/2000/svg">
+                <path class="neural-path" d="M300,300 Q600,200 900,450" style="animation-delay: 0s;" />
+                <path class="neural-path" d="M300,550 Q650,500 850,700" style="animation-delay: 1.2s;" />
+                <path class="neural-path" d="M300,750 Q550,850 900,600" style="animation-delay: 2.4s;" />
+                <circle cx="900" cy="450" r="4" fill="var(--accent)" />
+                <circle cx="850" cy="700" r="4" fill="var(--accent)" />
+                <circle cx="900" cy="600" r="4" fill="var(--accent)" />
+            </svg>
+        </div>
+    """, unsafe_allow_html=True)
 
-    combined = result.get("resume","") + " " + result.get("cover_letter","")
-    if job_description and combined.strip():
-        with st.expander("📊 ATS Keyword Match Score", expanded=True):
-            render_ats_panel(job_description, combined)
+    # ── Mirror Split: Resume (Left) vs ATS Optimization (Right) ─────
+    col_cv, col_hud = st.columns([1.1, 0.9], gap="large")
+    
+    with col_cv:
+        with st.container():
+            st.subheader("📄 TAILORED RESUME")
+            st.markdown(result.get("resume","_No resume generated._"))
+            export_buttons("Resume", result.get("resume",""), "resume", st.session_state.profile_name)
 
-    with st.expander("🔁 Refine — give feedback and re-generate", expanded=False):
-        refinement = st.text_area("What to change?",
-            value=st.session_state.get("refinement_prompt",""), height=80,
-            placeholder="e.g. 'Shorten by 20%, drop Cerberus project, more emphasis on Rust. Bolder CL opening.'",
-            key="refinement_input")
-        refine_clicked = st.button("♻️ Re-generate with feedback", type="secondary",
-            disabled=not refinement or not (
-                st.session_state.llm_agent and st.session_state.llm_agent.available))
-        if refine_clicked and refinement:
-            refinement_jd = (
-                f"CURRENT RESUME:\n{result.get('resume','')}\n\n"
-                f"CURRENT COVER LETTER:\n{result.get('cover_letter','')}\n\n"
-                f"USER FEEDBACK (apply these changes):\n{refinement}\n\n"
-                f"ORIGINAL JOB DESCRIPTION:\n{job_description}"
-            )
-            with st.spinner("♻️ Re-generating…"):
-                cl_cfg = st.session_state.get("cl_config") or load_cl_config()
-                orig = st.session_state.llm_agent.system_prompt
-                st.session_state.llm_agent.system_prompt = orig + build_system_addendum(cl_cfg)
-                new_result = st.session_state.llm_agent.generate_resume_and_cover_letter(
-                    refinement_jd, [], tone=st.session_state.tone)
-                st.session_state.llm_agent.system_prompt = orig
-                st.session_state.generation_result = new_result
-                st.session_state.refinement_prompt = refinement
-                combined_new = new_result.get("resume","") + " " + new_result.get("cover_letter","")
-                ats_new = score_ats_match(job_description, combined_new)["score"]
-                vid = save_generation(
-                    company=st.session_state.company_name, role=st.session_state.role_name,
-                    resume_md=new_result.get("resume",""),
-                    cover_letter_md=new_result.get("cover_letter",""),
-                    ats_score=ats_new, tone=st.session_state.tone,
-                    model=st.session_state.selected_model,
-                    job_description=job_description,
-                    profile_name=st.session_state.profile_name,
-                    notes=f"Refinement: {refinement[:120]}")
-                st.success(f"✅ Refined! Saved as version #{vid}")
-                st.rerun()
+    with col_hud:
+        with st.container():
+            st.subheader("🎯 OPTIMIZATION HUB")
+            render_ats_panel(job_description, result.get("resume","") + result.get("cover_letter",""))
+            
+            with st.expander("🔁 NEURAL REFINEMENT", expanded=False):
+                refinement = st.text_area("What to optimize?",
+                    placeholder="Shorten by 20%, focus more on Python...", key="refinement_input")
+                refine_clicked = st.button("RE-OPTIMIZE")
+                if refine_clicked and refinement:
+                    refinement_jd = (
+                        f"CURRENT RESUME:\n{result.get('resume','')}\n\n"
+                        f"FEEDBACK: {refinement}\n\n"
+                        f"ORIGINAL JD: {job_description}"
+                    )
+                    with st.spinner("RE-OPTIMIZING..."):
+                        cl_cfg = st.session_state.get("cl_config") or load_cl_config()
+                        orig = st.session_state.llm_agent.system_prompt
+                        st.session_state.llm_agent.system_prompt = orig + build_system_addendum(cl_cfg)
+                        new_result = st.session_state.llm_agent.generate_resume_and_cover_letter(
+                            refinement_jd, [], tone=st.session_state.tone)
+                        st.session_state.llm_agent.system_prompt = orig
+                        st.session_state.generation_result = new_result
+                        st.rerun()
 
-    tab1, tab2 = st.tabs(["📄 Resume", "✉️ Cover Letter"])
-    with tab1:
-        st.markdown(result.get("resume","_No resume generated._"))
-        export_buttons("Resume", result.get("resume",""), "resume", st.session_state.profile_name)
-    with tab2:
-        st.markdown(result.get("cover_letter","_No cover letter generated._"))
-        export_buttons("Cover_Letter", result.get("cover_letter",""), "cover_letter",
-                       st.session_state.profile_name)
+        with st.container():
+            st.subheader("✉️ COVER LETTER")
+            st.markdown(result.get("cover_letter","_No cover letter generated._"))
+            export_buttons("Cover_Letter", result.get("cover_letter",""), "cover_letter",
+                           st.session_state.profile_name)
 
 
 # ---------------------------------------------------------------------------
@@ -536,8 +631,8 @@ def main():
     initialize_session_state()
     render_sidebar()
 
-    st.markdown('<h1 class="main-header">hyred</h1>', unsafe_allow_html=True)
-    st.caption("Local-first CV & Cover Letter Generator — all processing on-device via Ollama")
+    st.markdown('<h1 class="main-header">HYRED</h1>', unsafe_allow_html=True)
+    st.markdown('<div class="sub-brand">NEURAL MIRROR // LOCAL-FIRST INTELLIGENCE</div>', unsafe_allow_html=True)
 
     uploaded_files = st.file_uploader(
         "Drop your CV / resume files here",

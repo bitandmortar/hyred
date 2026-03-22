@@ -1,3 +1,11 @@
+<p align="center">
+  <img src="assets/hyred_banner.png" alt="GIT + HYRED = GET HIRED" width="780"/>
+</p>
+
+<p align="center">
+  <img src="assets/git_hyred.png" alt="GIT_HYRED OMNI-CORE Integration" width="780"/>
+</p>
+
 # hyred
 
 **Local-first CV & Cover Letter Generator**

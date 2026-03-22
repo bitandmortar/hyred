@@ -47,6 +47,21 @@ st.set_page_config(
 
 st.markdown("""
 <style>
+    /* Anthropic Variable Fonts */
+    @font-face {
+        font-family: 'Anthropic Sans';
+        src: url('file:///Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/AnthropicSans-Romans-Variable-25x258.ttf') format('truetype');
+        font-weight: 100 900;
+        font-style: normal;
+    }
+    @font-face {
+        font-family: 'Anthropic Serif';
+        src: url('file:///Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/AnthropicSerif-Romans-Variable-25x258.ttf') format('truetype');
+        font-weight: 100 900;
+        font-style: normal;
+    }
+
+    /* Fallback / Optional Fonts */
     @font-face { font-family:'Barlow'; src:local('Barlow'),
         url('file:///Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/Barlow-Regular.ttf') format('truetype');
         font-weight:400; }
@@ -58,13 +73,36 @@ st.markdown("""
     @font-face { font-family:'Korolev'; src:local('Korolev'),
         url('file:///Volumes/OMNI_01/10_SOURCE/50_Ops/FONTS/Korolev Bold.otf') format('opentype');
         font-weight:700; }
-    .main-header { font-family:'Korolev','Barlow',sans-serif !important;
-        font-weight:900 !important; font-size:2.5rem !important; letter-spacing:-0.02em !important; }
-    [data-testid="stHeading"],[data-testid="stSubheader"] {
-        font-family:'Barlow',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif !important; }
-    [data-testid="stMarkdown"] {
-        font-family:'Inclusive Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif !important; }
-    [data-testid="stButton"]>button { font-family:'Barlow',sans-serif !important; font-weight:600 !important; }
+
+    /* Default UI Priority: Anthropic */
+    .main-header {
+        font-family: 'Anthropic Serif', 'Korolev', 'Barlow', serif !important;
+        font-weight: 900 !important;
+        font-size: 3rem !important;
+        letter-spacing: -0.01em !important;
+        background: linear-gradient(90deg, #fff, #94a3b8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    
+    [data-testid="stHeading"], [data-testid="stSubheader"] {
+        font-family: 'Anthropic Sans', 'Barlow', -apple-system, sans-serif !important;
+        font-weight: 700 !important;
+    }
+    
+    [data-testid="stMarkdown"], p, li, span, div {
+        font-family: 'Anthropic Sans', 'Inclusive Sans', 'Barlow', sans-serif !important;
+        font-weight: 400 !important;
+        line-height: 1.62 !important;
+    }
+    
+    [data-testid="stButton"]>button {
+        font-family: 'Anthropic Sans', 'Barlow', sans-serif !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.01em !important;
+        border-radius: 8px !important;
+    }
+
     .ats-pill-match { display:inline-block; background:#d1fae5; color:#065f46;
         border-radius:9999px; padding:2px 10px; margin:2px; font-size:.78rem; font-weight:600; }
     .ats-pill-miss  { display:inline-block; background:#fee2e2; color:#991b1b;

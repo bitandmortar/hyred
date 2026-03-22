@@ -1,5 +1,5 @@
-# Local Resume Builder - Requirements
-# Zero-Data-Leak Resume Tailoring for M2 Mac
+# hyred - Requirements
+# Local-first CV & Cover Letter Generator
 # All dependencies run locally - NO cloud APIs
 
 # Frontend / App Server
@@ -7,7 +7,7 @@ streamlit==1.32.0
 
 # Document Ingestion
 markitdown==0.0.1a3
-pypandoc==1.11  # For .pages and .odt conversion
+pypandoc==1.11
 
 # Local Vector Database
 lancedb==0.5.1
@@ -24,6 +24,9 @@ requests==2.31.0
 
 # File Synchronization
 watchdog==4.0.0
+
+# Export
+python-docx==1.1.0
 
 # LLM Backend (choose one)
 # Option 1: Ollama (recommended - already installed via brew)

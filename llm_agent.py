@@ -56,7 +56,7 @@ YOUR TASKS:
 
 CRITICAL CONSTRAINTS:
 - YOU MUST strictly use only the explicit facts (numbers, project scale, specific tools, dates) listed in the user's RAG context chunks
-- Hallucination is BANDED - do not invent experiences, skills, or achievements
+- Hallucination is BANNED - do not invent experiences, skills, or achievements
 - If the user's background doesn't match a requirement, acknowledge the gap honestly rather than fabricating
 - Use professional, ATS-friendly formatting
 - Quantify achievements where possible (use numbers from their actual history)
@@ -108,10 +108,11 @@ Focus on:
         return False
 
     def generate_resume_and_cover_letter(
-        self, job_description: str, rag_chunks: List[Dict], stream: bool = False
+        self, job_description: str, rag_chunks: List[Dict], stream: bool = False, tone: int = 50
     ) -> Dict[str, str]:
         """
         Generate tailored resume and cover letter.
+        tone: 0 = most formal (temp 0.3), 100 = most conversational (temp 0.85)
 
         Args:
             job_description: Job posting text
@@ -121,6 +122,9 @@ Focus on:
         Returns:
             Dictionary with 'resume' and 'cover_letter' keys
         """
+        # Apply tone → temperature mapping
+        self.temperature = 0.3 + (tone / 100.0) * 0.55
+
         # Build prompt with RAG context
         user_prompt = self._build_prompt(job_description, rag_chunks)
 

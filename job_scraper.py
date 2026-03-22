@@ -10,11 +10,23 @@ NO external APIs: No Firecrawl, no ScrapingBee, no cloud services.
 
 import subprocess
 import tempfile
+import json
 
 # from pathlib import Path  # Unused
 from typing import Optional, Dict
 from bs4 import BeautifulSoup
 import re
+
+# Supported job board URL patterns
+SITE_PATTERNS = {
+    "linkedin":     r"linkedin\.com/jobs",
+    "indeed":       r"indeed\.com/(viewjob|rc/clk|pagead)",
+    "ziprecruiter": r"ziprecruiter\.com/jobs",
+    "glassdoor":    r"glassdoor\.com/job-listing",
+    "greenhouse":   r"greenhouse\.io/jobs",
+    "lever":        r"jobs\.lever\.co",
+    "workday":      r"myworkdayjobs\.com",
+}
 
 
 class LocalJobScraper:
@@ -48,6 +60,132 @@ class LocalJobScraper:
                 "⚠️  playwright-cli not found. Install with: brew install playwright-cli"
             )
             return False
+
+    def _detect_site(self, url: str) -> str:
+        """Return site key or 'generic'."""
+        for site, pattern in SITE_PATTERNS.items():
+            if re.search(pattern, url, re.I):
+                return site
+        return "generic"
+
+    def _extract_json_ld(self, soup: BeautifulSoup) -> Optional[Dict]:
+        """Extract JSON-LD JobPosting structured data if present."""
+        for script in soup.find_all("script", type="application/ld+json"):
+            try:
+                data = json.loads(script.string or "")
+                if isinstance(data, list):
+                    data = next((d for d in data if d.get("@type") == "JobPosting"), None)
+                if data and data.get("@type") == "JobPosting":
+                    return data
+            except (json.JSONDecodeError, AttributeError):
+                continue
+        return None
+
+    def _parse_from_json_ld(self, data: Dict) -> Dict:
+        """Build result dict from JSON-LD JobPosting object."""
+        desc = data.get("description", "")
+        # Strip HTML tags from description
+        desc = re.sub(r"<[^>]+>", " ", desc)
+        desc = re.sub(r"\s+", " ", desc).strip()
+        return {
+            "job_title": data.get("title"),
+            "company": (data.get("hiringOrganization") or {}).get("name"),
+            "job_description": desc[:5000] if desc else None,
+            "requirements": None,
+            "error": None,
+        }
+
+    def _scrape_linkedin(self, soup: BeautifulSoup, url: str) -> Dict:
+        """LinkedIn job page extractor."""
+        # Try JSON-LD first
+        ld = self._extract_json_ld(soup)
+        if ld:
+            return self._parse_from_json_ld(ld)
+
+        # Fall back to meta tags + DOM selectors
+        title = (
+            self._extract_by_selectors(soup, ['meta[property="og:title"]']) or
+            self._extract_by_selectors(soup, ["h1"])
+        )
+        company = self._extract_by_selectors(
+            soup,
+            ['[class*="company-name"]', '[class*="topcard__org-name"]', 'a[data-tracking-control-name*="company"]']
+        )
+        desc_el = soup.select_one('[class*="description__text"]') or soup.select_one("main")
+        desc = desc_el.get_text(separator="\n", strip=True)[:5000] if desc_el else None
+
+        return {
+            "job_title": self._clean_text(title) if title else None,
+            "company": self._clean_text(company) if company else None,
+            "job_description": self._clean_text(desc) if desc else None,
+            "requirements": None,
+            "error": None if (title or desc) else
+                "LinkedIn requires login for full job details. Please paste the description manually.",
+        }
+
+    def _scrape_indeed(self, soup: BeautifulSoup, url: str) -> Dict:
+        """Indeed job page extractor — JSON-LD is usually present."""
+        ld = self._extract_json_ld(soup)
+        if ld:
+            return self._parse_from_json_ld(ld)
+
+        # DOM fallback
+        title = self._extract_by_selectors(
+            soup, ['[data-testid="jobsearch-JobInfoHeader-title"]', "h1"]
+        )
+        company = self._extract_by_selectors(
+            soup, ['[data-testid="inlineHeader-companyName"]', '[class*="companyName"]']
+        )
+        desc_el = soup.select_one('[id="jobDescriptionText"]') or soup.select_one("main")
+        desc = desc_el.get_text(separator="\n", strip=True)[:5000] if desc_el else None
+
+        return {
+            "job_title": self._clean_text(title) if title else None,
+            "company": self._clean_text(company) if company else None,
+            "job_description": self._clean_text(desc) if desc else None,
+            "requirements": None,
+            "error": None,
+        }
+
+    def _scrape_ziprecruiter(self, soup: BeautifulSoup, url: str) -> Dict:
+        """ZipRecruiter job page extractor."""
+        ld = self._extract_json_ld(soup)
+        if ld:
+            return self._parse_from_json_ld(ld)
+
+        title = self._extract_by_selectors(soup, ['[class*="job_title"]', "h1"])
+        company = self._extract_by_selectors(soup, ['[class*="hiring_company_text"]', '[class*="company"]'])
+        desc_el = soup.select_one('[class*="job_description"]') or soup.select_one("article")
+        desc = desc_el.get_text(separator="\n", strip=True)[:5000] if desc_el else None
+
+        return {
+            "job_title": self._clean_text(title) if title else None,
+            "company": self._clean_text(company) if company else None,
+            "job_description": self._clean_text(desc) if desc else None,
+            "requirements": None,
+            "error": None,
+        }
+
+    def _scrape_glassdoor(self, soup: BeautifulSoup, url: str) -> Dict:
+        """Glassdoor extractor — mostly gated, tries meta tags."""
+        ld = self._extract_json_ld(soup)
+        if ld:
+            return self._parse_from_json_ld(ld)
+
+        title = self._extract_by_selectors(soup, ['meta[property="og:title"]', "h1"])
+        company = self._extract_by_selectors(soup, ['[class*="employer-name"]', '[class*="company"]'])
+        desc_el = soup.select_one('[class*="jobDescriptionContent"]') or soup.select_one("main")
+        desc = desc_el.get_text(separator="\n", strip=True)[:5000] if desc_el else None
+
+        has_content = bool(title or desc)
+        return {
+            "job_title": self._clean_text(title) if title else None,
+            "company": self._clean_text(company) if company else None,
+            "job_description": self._clean_text(desc) if desc else None,
+            "requirements": None,
+            "error": None if has_content else
+                "Glassdoor requires login for full details. Please paste the description manually.",
+        }
 
     def scrape_url(self, url: str) -> Dict[str, Optional[str]]:
         """
@@ -122,7 +260,23 @@ class LocalJobScraper:
             for element in soup(["script", "style", "nav", "header", "footer"]):
                 element.decompose()
 
-            # Extract job title (try common selectors)
+            # --- Site-specific extraction ---
+            site = self._detect_site(url)
+            site_handlers = {
+                "linkedin":     self._scrape_linkedin,
+                "indeed":       self._scrape_indeed,
+                "ziprecruiter": self._scrape_ziprecruiter,
+                "glassdoor":    self._scrape_glassdoor,
+            }
+            if site in site_handlers:
+                result = site_handlers[site](soup, url)
+                # Clean all text fields
+                for key in ("job_title", "company", "job_description"):
+                    if result.get(key):
+                        result[key] = self._clean_text(result[key])
+                return result
+
+            # --- Generic extraction (Greenhouse, Lever, Workday, etc.) ---
             job_title = self._extract_by_selectors(
                 soup,
                 [

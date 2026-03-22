@@ -8,7 +8,7 @@ Falls back to regex heuristics if the model doesn't support tool calls.
 import json
 import re
 import requests
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 OLLAMA_URL = "http://localhost:11434"
 

@@ -6,7 +6,6 @@ Browse all saved generations, compare ATS scores over time,
 reload any past version into the session for further refinement.
 """
 import streamlit as st
-from datetime import datetime
 from version_history import list_generations, get_generation, delete_generation, update_notes
 
 st.set_page_config(page_title="Version History", page_icon="🕰️", layout="wide")

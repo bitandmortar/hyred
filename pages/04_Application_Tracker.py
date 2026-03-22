@@ -7,7 +7,6 @@ SQLite-backed via version_history + job_queue data.
 """
 import streamlit as st
 import sqlite3
-import json
 from pathlib import Path
 from datetime import datetime, date
 from typing import List, Dict

@@ -91,8 +91,8 @@ JOB DESCRIPTION:
         except Exception:
             pass
     # Fallback: split by newlines
-    lines = [l.strip().lstrip("0123456789.-) ") for l in raw.splitlines() if l.strip()]
-    return [l for l in lines if len(l) > 15][:n]
+    lines = [line.strip().lstrip("0123456789.-) ") for line in raw.splitlines() if line.strip()]
+    return [line for line in lines if len(line) > 15][:n]
 
 def score_answer(question: str, answer: str, job_description: str, model: str) -> str:
     prompt = f"""You are an interviewer scoring a candidate's answer.
@@ -220,7 +220,7 @@ with col_practice:
                 score_text = st.session_state.get("prep_scores", {}).get(str(i))
                 if score_text:
                     lines = score_text.splitlines()
-                    score_line = next((l for l in lines if l.startswith("Score:")), "")
+                    score_line = next((ln for ln in lines if ln.startswith("Score:")), "")
                     color = "#10b981" if "8" in score_line or "9" in score_line or "10" in score_line else (
                         "#f59e0b" if "6" in score_line or "7" in score_line else "#ef4444"
                     )

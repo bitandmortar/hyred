@@ -10,7 +10,6 @@ Requires: python-docx  (pip install python-docx)
 
 import io
 import re
-from typing import Optional
 
 
 def markdown_to_docx_bytes(markdown_text: str, title: str = "Document") -> bytes:

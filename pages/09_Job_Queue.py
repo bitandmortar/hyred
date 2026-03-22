@@ -5,16 +5,14 @@
 Bulk URL import → scrape → parse → score → compare → select → generate.
 """
 import streamlit as st
-import json
-from pathlib import Path
 
 from job_scraper import LocalJobScraper
 from jd_parser import parse_jd
 from ats_scorer import score_ats_match
-from salary_scraper import get_salary_intel, format_salary_display
+from salary_scraper import get_salary_intel
 from ghost_detector import detect_ghost_job
 from job_queue import (
-    add_job, list_queue, get_job, update_job, delete_job,
+    add_job, list_queue, delete_job,
     set_selected, get_clusters
 )
 
@@ -86,12 +84,12 @@ with tab_add:
             block = block.strip()
             if not block:
                 continue
-            lines = [l.strip() for l in block.splitlines() if l.strip()]
+            lines = [line.strip() for line in block.splitlines() if line.strip()]
             for line in lines:
                 if line.startswith("http://") or line.startswith("https://"):
                     to_process.append(("url", line))
             # If no URLs found in this block, treat it as raw JD
-            if not any(l.startswith("http") for l in lines) and block:
+            if not any(line.startswith("http") for line in lines) and block:
                 to_process.append(("text", block))
 
         progress = st.progress(0)

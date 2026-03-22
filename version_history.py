@@ -6,7 +6,6 @@ Stores every generation: company, role, ATS score, file paths, timestamp.
 Zero external deps beyond stdlib sqlite3.
 """
 import sqlite3
-import json
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Optional

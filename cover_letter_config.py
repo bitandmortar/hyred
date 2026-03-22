@@ -69,7 +69,7 @@ def build_system_addendum(config: Dict[str, Any]) -> str:
     forbidden = ", ".join(f'"{p}"' for p in config["forbidden_phrases"]) if config["forbidden_phrases"] else "none"
 
     lines = [
-        f"\nCOVER LETTER STRUCTURAL RULES:",
+        "\nCOVER LETTER STRUCTURAL RULES:",
         f"- Opening style: {opening_note}",
         f"- Sign off with: {config['sign_off']}",
         f"- Maximum words: {config['max_words']} (be concise, cut ruthlessly)",

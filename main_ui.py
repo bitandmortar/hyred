@@ -16,7 +16,7 @@ from ats_scorer import score_ats_match
 
 # Dynamic NotebookLM detect
 try:
-    import notebooklm_integration as nblm
+    # import notebooklm_integration as nblm
     _NOTEBOOKLM_AVAILABLE = True
 except ImportError:
     _NOTEBOOKLM_AVAILABLE = False

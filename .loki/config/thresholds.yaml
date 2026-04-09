@@ -1,0 +1,15 @@
+# Quality Gates - hyred
+quality:
+  test_coverage_min: 80
+  lint_errors_max: 0
+  type_errors_max: 0
+  p99_latency_max_ms: 200
+
+tech_debt:
+  low_issues_max: 20
+  cosmetic_issues_max: 50
+
+scaling:
+  queue_depth_spawn_2: 20
+  queue_depth_spawn_5: 50
+  critical_task_max_wait_min: 10

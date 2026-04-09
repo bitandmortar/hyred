@@ -1,0 +1,63 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+/* HYRED // BAUHAUS_MIGRATION_V3 */
+
+:root {
+  --primary: #b60020;
+  --secondary: #1d54c7;
+  --surface: #fafaf3;
+  --surface-container: #eeeee8;
+  --on-surface: #1a1c19;
+  --background: #fafaf3;
+}
+
+@layer base {
+  body {
+    @apply bg-[var(--background)] text-[var(--on-surface)] selection:bg-[var(--primary)] selection:text-white;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  * {
+    border-radius: 0px !important;
+  }
+
+  ::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer components {
+  .bauhaus-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 2px;
+    background-color: #dadad4;
+    @apply h-full w-full;
+  }
+
+  .bauhaus-panel {
+    @apply bg-white p-8 flex flex-col overflow-hidden;
+  }
+
+  .bauhaus-sidebar {
+    @apply bg-[var(--surface-container)] p-8 flex flex-col overflow-y-auto no-scrollbar;
+  }
+
+  .bauhaus-btn-primary {
+    @apply bg-[var(--primary)] text-white px-8 py-4 font-black uppercase tracking-[0.2em] text-xs transition-colors hover:bg-black;
+  }
+
+  .bauhaus-btn-ghost {
+    @apply bg-white border border-[#dadad4] px-4 py-2 font-black uppercase text-[10px] tracking-widest hover:border-[var(--primary)] hover:text-[var(--primary)] transition-all;
+  }
+
+  .bauhaus-input {
+    @apply w-full bg-white border border-[#dadad4] px-4 py-3 outline-none focus:border-[var(--primary)] transition-all font-mono text-sm;
+  }
+}

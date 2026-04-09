@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HYRED System Status</title>
+    <style>
+        :root {
+            --bg: #030407;
+            --card-bg: #1a1a25;
+            --text: #e0e0e0;
+            --text-muted: #a0a0b0;
+            --accent: #00ffca;
+            --success: #22c55e;
+            --error: #ef4444;
+            --border: #2a2a3a;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'SF Mono', 'JetBrains Mono', monospace;
+            background: var(--bg);
+            color: var(--text);
+            padding: 2rem;
+            min-height: 100vh;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: var(--accent);
+        }
+        .subtitle { color: var(--text-muted); margin-bottom: 2rem; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .card-title { font-size: 1.1rem; font-weight: 600; }
+        .status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .status.ok { background: rgba(34, 197, 94, 0.2); color: var(--success); }
+        .status.error { background: rgba(239, 68, 68, 0.2); color: var(--error); }
+        .status.loading { background: rgba(99, 102, 241, 0.2); color: #6366f1; }
+        .detail { margin: 0.5rem 0; font-size: 0.9rem; }
+        .detail-label { color: var(--text-muted); margin-right: 0.5rem; }
+        .detail-value { font-weight: 500; }
+        .actions { margin-top: 1.5rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: #000;
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 255, 202, 0.3); }
+        .btn-secondary {
+            background: var(--border);
+            color: var(--text);
+        }
+        .btn-secondary:hover { background: #3a3a4a; }
+        .log-output {
+            background: #000;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'SF Mono', monospace;
+            font-size: 0.85rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log-line { margin: 0.25rem 0; }
+        .log-line.ok { color: var(--success); }
+        .log-line.error { color: var(--error); }
+        .log-line.info { color: var(--text-muted); }
+        .refresh-btn {
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .refresh-btn:hover { background: rgba(0, 255, 202, 0.1); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📑 HYRED System Status</h1>
+            <p class="subtitle">Full Stack Integration Health Check</p>
+        </header>
+
+        <div class="grid">
+            <!-- Frontend Status -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">🌐 Frontend Server</span>
+                    <span id="frontend-status" class="status loading">Checking...</span>
+                </div>
+                <div class="detail">
+                    <span class="detail-label">Port:</span>
+                    <span class="detail-value">3022</span>
+                </div>
+                <div class="detail">
+                    <span class="detail-label">Path:</span>
+                    <span class="detail-value">/apps/hyred/dist</span>
+                </div>
+                <div class="detail">
+                    <span class="detail-label">Build:</span>
+                    <span id="frontend-build" class="detail-value">Checking...</span>
+                </div>
+            </div>
+
+            <!-- Backend API Status -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">🔌 Backend API</span>
+                    <span id="api-status" class="status loading">Checking...</span>
+                </div>
+                <div class="detail">
+                    <span class="detail-label">Port:</span>
+                    <span class="detail-value">8001 (pastyche_apollo)</span>
+                </div>
+                <div class="detail">
+                    <span class="detail-label">Gateway:</span>
+                    <span class="detail-value">8000 (Apollo Bridge)</span>
+                </div>
+                <div class="detail">
+                    <span class="detail-label">RAG Index:</span>
+                    <span id="rag-index" class="detail-value">--</span>
+                </div>
+            </div>
+
+            <!-- Database Status -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">🗄️ Vector Database</span>
+                    <span id="db-status" class="status loading">Checking...</span>
+                </div>
+                <div class="detail">
+                    <span class="detail-label">Type:</span>
+                    <span class="detail-value">LanceDB</span>
+                </div>
+                <div class="detail">
+                    <span class="detail-label">Indexed Files:</span>
+                    <span id="indexed-files" class="detail-value">--</span>
+                </div>
+                <div class="detail">
+                    <span class="detail-label">Total Chunks:</span>
+                    <span id="total-chunks" class="detail-value">--</span>
+                </div>
+            </div>
+
+            <!-- LLM Status -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">🦙 LLM Engine</span>
+                    <span id="llm-status" class="status loading">Checking...</span>
+                </div>
+                <div class="detail">
+                    <span class="detail-label">Backend:</span>
+                    <span class="detail-value">Ollama</span>
+                </div>
+                <div class="detail">
+                    <span class="detail-label">Port:</span>
+                    <span class="detail-value">11434</span>
+                </div>
+                <div class="detail">
+                    <span class="detail-label">Model:</span>
+                    <span id="llm-model" class="detail-value">--</span>
+                </div>
+            </div>
+
+            <!-- Documents -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">📄 Documents</span>
+                    <span id="docs-status" class="status loading">Checking...</span>
+                </div>
+                <div class="detail">
+                    <span class="detail-label">Directory:</span>
+                    <span class="detail-value">my_documents/</span>
+                </div>
+                <div class="detail">
+                    <span class="detail-label">Total Files:</span>
+                    <span id="total-files" class="detail-value">--</span>
+                </div>
+                <div class="detail">
+                    <span class="detail-label">Storage:</span>
+                    <span class="detail-value">Local FS</span>
+                </div>
+            </div>
+
+            <!-- File Watcher -->
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">👁️ File Watcher</span>
+                    <span id="watcher-status" class="status loading">Checking...</span>
+                </div>
+                <div class="detail">
+                    <span class="detail-label">Status:</span>
+                    <span id="watcher-state" class="detail-value">--</span>
+                </div>
+                <div class="detail">
+                    <span class="detail-label">Auto-Index:</span>
+                    <span class="detail-value">Enabled</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span class="card-title">📋 System Log</span>
+                <button class="refresh-btn" onclick="runChecks()">↻ Refresh</button>
+            </div>
+            <div id="log-output" class="log-output">
+                <div class="log-line info">Initializing health checks...</div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <a href="http://localhost:3022" class="btn btn-primary" target="_blank">🚀 Open HYRED App</a>
+            <a href="https://hyred.bitandmortar.com" class="btn btn-primary" target="_blank">🌐 Public URL</a>
+            <a href="/docs" class="btn btn-secondary" target="_blank">📖 API Docs</a>
+            <button class="btn btn-secondary" onclick="testGeneration()">🧪 Test Generation</button>
+        </div>
+    </div>
+
+    <script>
+        const log = document.getElementById('log-output');
+        
+        function addLog(message, type = 'info') {
+            const line = document.createElement('div');
+            line.className = `log-line ${type}`;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(line);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        async function checkEndpoint(url, name) {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                const response = await fetch(url, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                
+                if (response.ok) {
+                    addLog(`${name} is responding`, 'ok');
+                    return await response.json();
+                } else {
+                    addLog(`${name} returned ${response.status}`, 'error');
+                    return null;
+                }
+            } catch (e) {
+                addLog(`${name} not responding: ${e.message}`, 'error');
+                return null;
+            }
+        }
+
+        async function runChecks() {
+            addLog('Starting full system health check...', 'info');
+
+            // Check Frontend
+            const frontendStatus = document.getElementById('frontend-status');
+            const frontendBuild = document.getElementById('frontend-build');
+            try {
+                const response = await fetch('http://localhost:3022', { method: 'HEAD' });
+                if (response.ok) {
+                    frontendStatus.className = 'status ok';
+                    frontendStatus.textContent = 'Online';
+                    frontendBuild.textContent = '✓ Built';
+                    addLog('Frontend server responding on port 3022', 'ok');
+                }
+            } catch (e) {
+                frontendStatus.className = 'status error';
+                frontendStatus.textContent = 'Offline';
+                frontendBuild.textContent = 'Error';
+                addLog('Frontend not responding', 'error');
+            }
+
+            // Check API
+            const apiStatus = document.getElementById('api-status');
+            const apiData = await checkEndpoint('/api/hyred/status', 'Backend API');
+            if (apiData && apiData.ok) {
+                apiStatus.className = 'status ok';
+                apiStatus.textContent = 'Online';
+                document.getElementById('rag-index').textContent = `${apiData.rag?.indexed_files || 0} files`;
+                addLog(`API online - ${apiData.rag?.indexed_files || 0} files indexed`, 'ok');
+            } else {
+                apiStatus.className = 'status error';
+                apiStatus.textContent = 'Offline';
+            }
+
+            // Check LLM
+            const llmStatus = document.getElementById('llm-status');
+            const llmData = await checkEndpoint('http://localhost:11434/api/tags', 'Ollama');
+            if (llmData && llmData.models) {
+                llmStatus.className = 'status ok';
+                llmStatus.textContent = 'Ready';
+                const models = llmData.models.map(m => m.name).join(', ');
+                document.getElementById('llm-model').textContent = models || 'No models';
+                addLog(`Ollama ready with models: ${models}`, 'ok');
+            } else {
+                llmStatus.className = 'status error';
+                llmStatus.textContent = 'Offline';
+            }
+
+            // Update DB info from API
+            if (apiData) {
+                document.getElementById('indexed-files').textContent = apiData.rag?.indexed_files || '0';
+                document.getElementById('total-chunks').textContent = apiData.rag?.total_chunks || '0';
+                document.getElementById('db-status').className = 'status ok';
+                document.getElementById('db-status').textContent = 'Connected';
+            }
+
+            // Update docs count
+            const docsData = await checkEndpoint('/api/hyred/documents', 'Documents API');
+            if (docsData && docsData.files) {
+                document.getElementById('total-files').textContent = docsData.files.length;
+                document.getElementById('docs-status').className = 'status ok';
+                document.getElementById('docs-status').textContent = 'Ready';
+                addLog(`${docsData.files.length} documents available`, 'ok');
+            }
+
+            // Watcher status
+            const watcherStatus = document.getElementById('watcher-status');
+            const watcherState = document.getElementById('watcher-state');
+            if (apiData && apiData.watcher) {
+                watcherState.textContent = apiData.watcher;
+                watcherStatus.className = apiData.watcher === 'running' ? 'status ok' : 'status error';
+                watcherStatus.textContent = apiData.watcher === 'running' ? 'Active' : 'Inactive';
+            } else {
+                watcherState.textContent = 'Unknown';
+                watcherStatus.className = 'status loading';
+                watcherStatus.textContent = 'Checking...';
+            }
+
+            addLog('Health check complete', 'ok');
+        }
+
+        async function testGeneration() {
+            addLog('Testing generation endpoint...', 'info');
+            try {
+                const response = await fetch('/api/hyred/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        job_description: 'Test',
+                        profile_name: 'Test User',
+                        profile_title: 'Test Role',
+                        tone: 50,
+                        model: 'llama3.2:3b'
+                    })
+                });
+                
+                if (response.ok) {
+                    addLog('Generation endpoint responding', 'ok');
+                    alert('✅ Generation endpoint is working!');
+                } else {
+                    addLog('Generation endpoint returned ' + response.status, 'error');
+                    alert('❌ Generation endpoint error: ' + response.status);
+                }
+            } catch (e) {
+                addLog('Generation test failed: ' + e.message, 'error');
+                alert('❌ Generation test failed: ' + e.message);
+            }
+        }
+
+        // Run checks on load
+        window.onload = runChecks;
+    </script>
+</body>
+</html>

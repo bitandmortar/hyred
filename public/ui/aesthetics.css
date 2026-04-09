@@ -1,0 +1,351 @@
+/**
+ * Bit & Mortar Aesthetic System Styles
+ * 
+ * Core CSS styles for the aesthetic system.
+ * Import this file in your main CSS or JS entry point.
+ * 
+ * @file aesthetics.css
+ */
+
+/* ─── CSS Variables (Defaults) ─────────────────────────────────────────────── */
+
+:root {
+  /* Default colors (Ancient Egyptian fallback) */
+  --color-primary: #c19a49;
+  --color-secondary: #1c3f94;
+  --color-tertiary: #0f1a2b;
+  --color-accent: #2d5016;
+  
+  /* Typography */
+  --font-primary: 'Cinzel', serif;
+  --font-secondary: 'Cormorant Garamond', serif;
+  
+  /* Animation */
+  --ease-aesthetic: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-aesthetic: 0.3s;
+  
+  /* Spacing */
+  --spacing-aesthetic: 8px;
+  
+  /* Border radius */
+  --radius-aesthetic: 4px;
+}
+
+/* ─── Global Styles ────────────────────────────────────────────────────────── */
+
+/* Smooth transitions for all aesthetic changes */
+* {
+  transition-property: color, background-color, border-color, font-family;
+  transition-duration: var(--duration-aesthetic);
+  transition-timing-function: var(--ease-aesthetic);
+}
+
+/* Body receives font family from aesthetic */
+body {
+  font-family: var(--font-primary, system-ui);
+}
+
+/* Headlines use secondary font if defined */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-primary, system-ui);
+  font-weight: 700;
+}
+
+/* ─── Ampersand Styles ─────────────────────────────────────────────────────── */
+
+#bm-ampersand {
+  cursor: pointer;
+  display: inline-block;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: transform 0.4s var(--ease-aesthetic),
+              color 0.3s ease,
+              text-shadow 0.3s ease;
+  color: var(--color-primary, #00ffca);
+}
+
+#bm-ampersand:hover {
+  transform: rotate(12deg) scale(1.2);
+  color: var(--color-secondary, #ffd700);
+  text-shadow: 0 0 10px var(--color-primary);
+}
+
+#bm-ampersand:active {
+  transform: rotate(-5deg) scale(0.95);
+}
+
+/* ─── Bit & Mortar Title ───────────────────────────────────────────────────── */
+
+.bm-title {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-primary, system-ui);
+}
+
+.bm-slash {
+  opacity: 0.4;
+  margin-left: 4px;
+  font-family: monospace;
+  color: var(--color-primary, #00ffca);
+}
+
+/* ─── Epoch Picker Overlay ─────────────────────────────────────────────────── */
+
+#bm-epoch-picker-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  animation: bm-overlay-fade-in 0.3s ease;
+}
+
+@keyframes bm-overlay-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes bm-card-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.bm-epoch-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  animation: bm-card-scale-in 0.3s ease;
+}
+
+.bm-epoch-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  border-color: var(--color-primary, #00ffca);
+}
+
+.bm-epoch-card.selected {
+  outline: 2px solid var(--color-primary, #00ffca);
+  outline-offset: 2px;
+}
+
+/* ─── Aesthetic Tooltip ────────────────────────────────────────────────────── */
+
+.bm-aesthetic-tooltip {
+  position: fixed;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.9);
+  color: #fff;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-family: system-ui;
+  font-size: 12px;
+  line-height: 1.5;
+  pointer-events: none;
+  transform: translateX(-50%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  max-width: 300px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  animation: bm-tooltip-fade-in 0.2s ease;
+}
+
+@keyframes bm-tooltip-fade-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* ─── UI Mutation Classes ──────────────────────────────────────────────────── */
+
+/* Brutalism: sharp corners */
+[data-aesthetic-epoch*="Brutalism"] button,
+[data-aesthetic-epoch*="Brutalism"] .button,
+[data-aesthetic-epoch*="Brutalism"] [role="button"] {
+  border-radius: 0px !important;
+  border-width: 2px !important;
+  border-style: solid !important;
+}
+
+/* Rococo: ornate curves */
+[data-aesthetic-epoch*="Rococo"] button,
+[data-aesthetic-epoch*="Rococo"] .button,
+[data-aesthetic-epoch*="Rococo"] [role="button"] {
+  border-radius: 24px !important;
+}
+
+/* Bauhaus: geometric */
+[data-aesthetic-epoch*="Bauhaus"] button,
+[data-aesthetic-epoch*="Bauhaus"] .button,
+[data-aesthetic-epoch*="Bauhaus"] [role="button"] {
+  border-radius: 4px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+}
+
+/* Cyberpunk: tech angles */
+[data-aesthetic-epoch*="Cyberpunk"] button,
+[data-aesthetic-epoch*="Cyberpunk"] .button,
+[data-aesthetic-epoch*="Cyberpunk"] [role="button"] {
+  border-radius: 2px !important;
+  font-family: 'Share Tech Mono', monospace !important;
+  text-transform: uppercase !important;
+  letter-spacing: 2px !important;
+}
+
+/* Y2K: glossy rounded */
+[data-aesthetic-epoch*="Y2K"] button,
+[data-aesthetic-epoch*="Y2K"] .button,
+[data-aesthetic-epoch*="Y2K"] [role="button"] {
+  border-radius: 12px !important;
+  background: linear-gradient(180deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 100%) !important;
+}
+
+/* ─── Epoch-Specific Font Overrides ───────────────────────────────────────── */
+
+[data-aesthetic-epoch*="Gothic"] h1,
+[data-aesthetic-epoch*="Gothic"] h2,
+[data-aesthetic-epoch*="Gothic"] h3,
+[data-aesthetic-epoch*="Viking"] h1,
+[data-aesthetic-epoch*="Celtic"] h1,
+[data-aesthetic-epoch*="Celtic"] h2 {
+  font-family: 'UnifrakturCook', cursive !important;
+  font-weight: 700 !important;
+}
+
+[data-aesthetic-epoch*="Minimalism"] h1,
+[data-aesthetic-epoch*="Minimalism"] h2,
+[data-aesthetic-epoch*="Minimalism"] h3 {
+  font-weight: 300 !important;
+  letter-spacing: -0.02em !important;
+}
+
+[data-aesthetic-epoch*="Pop"] h1,
+[data-aesthetic-epoch*="Pop"] h2,
+[data-aesthetic-epoch*="Pop"] h3 {
+  font-weight: 900 !important;
+  text-transform: uppercase !important;
+}
+
+/* ─── Layout Mutations ─────────────────────────────────────────────────────── */
+
+/* Deconstructivism: skewed layouts */
+[data-aesthetic-epoch*="Deconstruct"] body {
+  transform: perspective(1000px) rotateX(2deg);
+}
+
+/* Op Art: high contrast patterns */
+[data-aesthetic-epoch*="Op Art"] body {
+  background-image: repeating-linear-gradient(
+    45deg,
+    #000 25%,
+    transparent 25%,
+    transparent 75%,
+    #000 75%,
+    #000
+  ), repeating-linear-gradient(
+    45deg,
+    #000 25%,
+    #fff 25%,
+    #fff 75%,
+    #000 75%,
+    #000
+  );
+  background-position: 0 0, 10px 10px;
+  background-size: 20px 20px;
+}
+
+/* ─── Utility Classes ──────────────────────────────────────────────────────── */
+
+.bm-aesthetic-color-primary {
+  color: var(--color-primary);
+}
+
+.bm-aesthetic-bg-primary {
+  background-color: var(--color-primary);
+}
+
+.bm-aesthetic-color-secondary {
+  color: var(--color-secondary);
+}
+
+.bm-aesthetic-bg-secondary {
+  background-color: var(--color-secondary);
+}
+
+.bm-aesthetic-color-tertiary {
+  color: var(--color-tertiary);
+}
+
+.bm-aesthetic-bg-tertiary {
+  background-color: var(--color-tertiary);
+}
+
+.bm-aesthetic-font-primary {
+  font-family: var(--font-primary);
+}
+
+.bm-aesthetic-font-secondary {
+  font-family: var(--font-secondary);
+}
+
+/* ─── Print Styles ─────────────────────────────────────────────────────────── */
+
+@media print {
+  /* Disable aesthetic mutations in print */
+  #bm-epoch-picker-overlay,
+  .bm-aesthetic-tooltip {
+    display: none !important;
+  }
+  
+  /* Use system fonts for reliability */
+  * {
+    font-family: system-ui !important;
+    transition: none !important;
+  }
+}
+
+/* ─── Reduced Motion ───────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+  
+  #bm-ampersand {
+    transition: none !important;
+  }
+  
+  #bm-ampersand:hover {
+    transform: none !important;
+  }
+}

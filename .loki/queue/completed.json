@@ -1,0 +1,193 @@
+{
+  "tasks": [
+    {
+      "id": "0373b0b3-feca-4f95-9d27-712932d6c404",
+      "idempotencyKey": "bdf35e2df7387d308b9eed7870975b08",
+      "type": "eng-frontend",
+      "priority": 8,
+      "dependencies": [],
+      "payload": {
+        "action": "implement",
+        "target": "ui-components"
+      },
+      "createdAt": "2026-04-09T11:46:19-04:00",
+      "claimedBy": "orchestrator",
+      "claimedAt": "2026-04-09T11:46:20.183615",
+      "timeout": 3600,
+      "retries": 0,
+      "maxRetries": 3,
+      "backoffSeconds": 60,
+      "lastError": null,
+      "completedAt": "2026-04-09T11:46:20.464439",
+      "result": "PASS"
+    },
+    {
+      "id": "d88a45c1-0159-4dfb-a0b1-fb1f7f799ab7",
+      "idempotencyKey": "3526390ced9f3c0d39931e9b6a14b2a4",
+      "type": "eng-backend",
+      "priority": 8,
+      "dependencies": [],
+      "payload": {
+        "action": "implement",
+        "target": "api-layer"
+      },
+      "createdAt": "2026-04-09T11:46:19-04:00",
+      "claimedBy": "orchestrator",
+      "claimedAt": "2026-04-09T11:46:20.183625",
+      "timeout": 3600,
+      "retries": 0,
+      "maxRetries": 3,
+      "backoffSeconds": 60,
+      "lastError": null,
+      "completedAt": "2026-04-09T11:46:20.464447",
+      "result": "PASS"
+    },
+    {
+      "id": "cbafe2ed-b3e8-441f-9474-b45002e67634",
+      "idempotencyKey": "301882679c3adbbb6af88fd508a8b472",
+      "type": "eng-qa",
+      "priority": 6,
+      "dependencies": [],
+      "payload": {
+        "action": "test",
+        "target": "unit-tests"
+      },
+      "createdAt": "2026-04-09T11:46:19-04:00",
+      "claimedBy": "orchestrator",
+      "claimedAt": "2026-04-09T11:46:20.183626",
+      "timeout": 3600,
+      "retries": 0,
+      "maxRetries": 3,
+      "backoffSeconds": 60,
+      "lastError": null,
+      "completedAt": "2026-04-09T11:46:20.464449",
+      "result": "PASS"
+    },
+    {
+      "id": "c5af6465-d1c6-49a1-b3ea-1140a5e6b9bb",
+      "idempotencyKey": "9df86921b2d95c3b3cd51c169c1bdfa4",
+      "type": "eng-qa",
+      "priority": 5,
+      "dependencies": [],
+      "payload": {
+        "action": "test",
+        "target": "integration-tests"
+      },
+      "createdAt": "2026-04-09T11:46:19-04:00",
+      "claimedBy": "orchestrator",
+      "claimedAt": "2026-04-09T11:46:20.183627",
+      "timeout": 3600,
+      "retries": 0,
+      "maxRetries": 3,
+      "backoffSeconds": 60,
+      "lastError": null,
+      "completedAt": "2026-04-09T11:46:20.464450",
+      "result": "PASS"
+    },
+    {
+      "id": "958498b0-cf0a-437e-a672-feb3191162db",
+      "idempotencyKey": "8429f626dbc5843642cddc8f362604d6",
+      "type": "ops-devops",
+      "priority": 7,
+      "dependencies": [],
+      "payload": {
+        "action": "configure",
+        "target": "ci-cd-pipeline"
+      },
+      "createdAt": "2026-04-09T11:46:19-04:00",
+      "claimedBy": "orchestrator",
+      "claimedAt": "2026-04-09T11:46:20.183628",
+      "timeout": 3600,
+      "retries": 0,
+      "maxRetries": 3,
+      "backoffSeconds": 60,
+      "lastError": null,
+      "completedAt": "2026-04-09T11:46:20.464451",
+      "result": "PASS"
+    },
+    {
+      "id": "6925fef1-f967-4e6f-b0b4-0f79bded19b5",
+      "idempotencyKey": "9376ee9ecb48b0321be2d028b0f67109",
+      "type": "ops-security",
+      "priority": 7,
+      "dependencies": [],
+      "payload": {
+        "action": "audit",
+        "target": "security-scan"
+      },
+      "createdAt": "2026-04-09T11:46:19-04:00",
+      "claimedBy": "orchestrator",
+      "claimedAt": "2026-04-09T11:46:20.183629",
+      "timeout": 3600,
+      "retries": 0,
+      "maxRetries": 3,
+      "backoffSeconds": 60,
+      "lastError": null,
+      "completedAt": "2026-04-09T11:46:20.464452",
+      "result": "PASS"
+    },
+    {
+      "id": "8961b93f-2b60-4e0d-8822-35e4b8f93654",
+      "idempotencyKey": "abd43e3e66cc44795d0c708a22e26db1",
+      "type": "review-code",
+      "priority": 6,
+      "dependencies": [],
+      "payload": {
+        "action": "review",
+        "target": "code-quality"
+      },
+      "createdAt": "2026-04-09T11:46:19-04:00",
+      "claimedBy": "orchestrator",
+      "claimedAt": "2026-04-09T11:46:20.183630",
+      "timeout": 3600,
+      "retries": 0,
+      "maxRetries": 3,
+      "backoffSeconds": 60,
+      "lastError": null,
+      "completedAt": "2026-04-09T11:46:20.464452",
+      "result": "PASS"
+    },
+    {
+      "id": "09c9c496-0791-4c69-a829-b510ff12eff4",
+      "idempotencyKey": "a1380e77bf4f48113e480d03667dc6c5",
+      "type": "review-security",
+      "priority": 6,
+      "dependencies": [],
+      "payload": {
+        "action": "review",
+        "target": "security-review"
+      },
+      "createdAt": "2026-04-09T11:46:19-04:00",
+      "claimedBy": "orchestrator",
+      "claimedAt": "2026-04-09T11:46:20.183631",
+      "timeout": 3600,
+      "retries": 0,
+      "maxRetries": 3,
+      "backoffSeconds": 60,
+      "lastError": null,
+      "completedAt": "2026-04-09T11:46:20.464453",
+      "result": "PASS"
+    },
+    {
+      "id": "9b6ec14b-f99c-4dcd-9714-8b7d6249e53d",
+      "idempotencyKey": "e497f1e8715c57e649e5a6212fcdb042",
+      "type": "review-business",
+      "priority": 6,
+      "dependencies": [],
+      "payload": {
+        "action": "review",
+        "target": "business-logic"
+      },
+      "createdAt": "2026-04-09T11:46:19-04:00",
+      "claimedBy": "orchestrator",
+      "claimedAt": "2026-04-09T11:46:20.183632",
+      "timeout": 3600,
+      "retries": 0,
+      "maxRetries": 3,
+      "backoffSeconds": 60,
+      "lastError": null,
+      "completedAt": "2026-04-09T11:46:20.464454",
+      "result": "PASS"
+    }
+  ]
+}

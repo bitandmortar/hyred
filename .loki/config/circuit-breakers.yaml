@@ -1,0 +1,13 @@
+# Circuit Breaker Config - hyred
+defaults:
+  failureThreshold: 5
+  cooldownSeconds: 300
+  halfOpenRequests: 3
+
+overrides:
+  external-api:
+    failureThreshold: 3
+    cooldownSeconds: 600
+  eng-frontend:
+    failureThreshold: 10
+    cooldownSeconds: 180

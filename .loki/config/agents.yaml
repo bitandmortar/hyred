@@ -1,0 +1,14 @@
+# Agent Pool Configuration - hyred
+pool:
+  initial_size: 5
+  max_size: 20
+  idle_timeout_minutes: 30
+
+roles:
+  - eng-frontend
+  - eng-backend
+  - eng-qa
+  - ops-devops
+  - review-code
+  - review-business
+  - review-security

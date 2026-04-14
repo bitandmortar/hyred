@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
 """
 NotebookLM CV Auto-Import
-Fetches CV/Resume content from existing NotebookLM notebooks with "Julian Mackler" in title
+Fetches CV/Resume content from existing NotebookLM notebooks with the configured profile name in title
 """
 
+import os
 import subprocess
 from pathlib import Path
 from typing import List, Dict, Optional
+
+# Configurable profile name for notebook search
+PROFILE_NAME = os.environ.get("HYRED_PROFILE_NAME", "Julian Mackler")
 
 
 class NotebookLMCVImporter:
     """
     Auto-import CV content from NotebookLM notebooks
-    Searches for notebooks with "Julian Mackler" in title
+    Searches for notebooks with the configured profile name in title
     """
 
     def __init__(self, storage_path: Optional[str] = None):
@@ -43,9 +47,9 @@ class NotebookLMCVImporter:
         except FileNotFoundError:
             return subprocess.CompletedProcess(cmd, -1, "", "notebooklm not found")
 
-    def list_julian_mackler_notebooks(self) -> List[Dict]:
+    def list_profile_notebooks(self) -> List[Dict]:
         """
-        List all notebooks with "Julian Mackler" in title
+        List all notebooks with the configured profile name in title
 
         Returns:
             List of notebook dictionaries with id, title, source_count
@@ -59,7 +63,7 @@ class NotebookLMCVImporter:
         notebooks = []
         for line in result.stdout.split("\n"):
             # Match lines like: "• 842ad6c3-b781-4080-878a-5980dd9d24f4 : OMNI_01 - Census Final"
-            if ":" in line and "julian" in line.lower():
+            if ":" in line and PROFILE_NAME.lower() in line.lower():
                 parts = line.split(":")
                 if len(parts) >= 2:
                     nb_id = parts[0].replace("•", "").strip()
@@ -195,15 +199,15 @@ class NotebookLMCVImporter:
         """
         from datetime import datetime
 
-        # Find Julian Mackler notebooks
-        notebooks = self.list_julian_mackler_notebooks()
+        # Find profile notebooks
+        notebooks = self.list_profile_notebooks()
 
         if not notebooks:
-            print("❌ No notebooks found with 'Julian Mackler' in title")
-            print("💡 Please ensure you have CV/resume content in NotebookLM")
+            print(f"No notebooks found with '{PROFILE_NAME}' in title")
+            print("Please ensure you have CV/resume content in NotebookLM")
             return None
 
-        print(f"✅ Found {len(notebooks)} Julian Mackler notebooks:")
+        print(f"Found {len(notebooks)} {PROFILE_NAME} notebooks:")
         for nb in notebooks:
             print(f"   📓 {nb['title']} ({nb['source_count']} sources)")
 
@@ -231,10 +235,11 @@ class NotebookLMCVImporter:
 
         # Save combined CV
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        cv_file = output_path / f"julian_mackler_cv_notebooklm_{timestamp}.md"
+        safe_profile = PROFILE_NAME.lower().replace(" ", "_")
+        cv_file = output_path / f"{safe_profile}_cv_notebooklm_{timestamp}.md"
 
         with open(cv_file, "w") as f:
-            f.write("# Julian Mackler - CV from NotebookLM\n\n")
+            f.write(f"# {PROFILE_NAME} - CV from NotebookLM\n\n")
             f.write(f"**Imported:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
             f.write(f"**Source Notebooks:** {len(notebooks)}\n\n")
             f.write("---\n\n")
@@ -264,34 +269,34 @@ def import_cv_from_notebooklm() -> Optional[Path]:
 
 
 if __name__ == "__main__":
-    print("🚀 NotebookLM CV Auto-Import")
+    print("NotebookLM CV Auto-Import")
     print("=" * 60)
 
     importer = NotebookLMCVImporter()
 
     # List notebooks
-    print("\n📓 Finding Julian Mackler notebooks...")
-    notebooks = importer.list_julian_mackler_notebooks()
+    print(f"\nFinding {PROFILE_NAME} notebooks...")
+    notebooks = importer.list_profile_notebooks()
 
     if notebooks:
-        print(f"\n✅ Found {len(notebooks)} notebooks:")
+        print(f"\nFound {len(notebooks)} notebooks:")
         for nb in notebooks:
-            print(f"   📓 {nb['title']}")
+            print(f"   {nb['title']}")
             print(f"      ID: {nb['id']}")
             print(f"      Sources: {nb['source_count']}")
 
         # Import CV
-        print("\n📥 Importing CV content...")
+        print("\nImporting CV content...")
         cv_path = importer.import_cv_to_documents()
 
         if cv_path:
-            print("\n✅ CV imported successfully!")
-            print(f"📁 Location: {cv_path}")
-            print("\n💡 Next step: Use the Resume Builder to tailor this CV")
+            print("\nCV imported successfully!")
+            print(f"Location: {cv_path}")
+            print("\nNext step: Use the Resume Builder to tailor this CV")
     else:
-        print("\n❌ No Julian Mackler notebooks found")
-        print("\n💡 To fix this:")
+        print(f"\nNo {PROFILE_NAME} notebooks found")
+        print("\nTo fix this:")
         print("   1. Go to https://notebooklm.google.com")
         print("   2. Create/upload notebooks with your CV/resume")
-        print("   3. Include 'Julian Mackler' in the notebook title")
+        print(f"   3. Include '{PROFILE_NAME}' in the notebook title")
         print("   4. Run this import again")

@@ -10,6 +10,7 @@ NO data leakage: All prompts and responses stay within local network.
 """
 
 import json
+import os
 from typing import List, Dict, Optional
 from pathlib import Path
 
@@ -44,14 +45,21 @@ class LocalLLMAgent:
         self.temperature = temperature
         self.max_tokens = max_tokens
 
+        # Read profile from environment or use defaults
+        self.profile_name = os.environ.get("HYRED_PROFILE_NAME", "Julian Mackler")
+        self.profile_email = os.environ.get("HYRED_PROFILE_EMAIL", "julianmackler@gmail.com")
+        self.profile_phone = os.environ.get("HYRED_PROFILE_PHONE", "347-882-6333")
+        self.profile_location = os.environ.get("HYRED_PROFILE_LOCATION", "Washington, DC Metro")
+        profile_display = os.environ.get("HYRED_PROFILE_DISPLAY", "Julian (Juju) Mackler")
+
         # System prompt for CV writing
-        self.system_prompt = """You are an offline Expert CV writer and career consultant. The user operates with absolute privacy constraints - no data may ever leave their local network.
+        self.system_prompt = f"""You are an offline Expert CV writer and career consultant. The user operates with absolute privacy constraints - no data may ever leave their local network.
 
 USER'S IDENTITY (USE THIS EXACT INFORMATION):
-- Name: Julian (Juju) Mackler
-- Email: julianmackler@gmail.com
-- Phone: 347-882-6333
-- Location: Washington, DC Metro
+- Name: {profile_display}
+- Email: {self.profile_email}
+- Phone: {self.profile_phone}
+- Location: {self.profile_location}
 
 A Job Description and specific factual elements from the User's Real History will be provided to you via RAG context chunks.
 
@@ -67,17 +75,17 @@ CRITICAL CONSTRAINTS:
 - Use professional, ATS-friendly formatting
 - Quantify achievements where possible (use numbers from their actual history)
 - Match keywords from the job description naturally (don't keyword stuff)
-- For the resume header, use: Julian (Juju) Mackler | julianmackler@gmail.com | 347-882-6333 | Washington, DC Metro
+- For the resume header, use: {profile_display} | {self.profile_email} | {self.profile_phone} | {self.profile_location}
 - For the cover letter salutation, use "Dear Hiring Team," (NOT "Dear Hiring Manager")
-- For the cover letter signature, use "Julian Mackler" (NOT "[Your Name]" or "[Hiring Manager]")
+- For the cover letter signature, use "{self.profile_name}" (NOT "[Your Name]" or "[Hiring Manager]")
 
 OUTPUT FORMAT:
 Provide TWO sections:
 1. **Tailored Resume** (Markdown format, ATS-friendly, 1-2 pages)
-   - Header MUST include: Julian (Juju) Mackler | julianmackler@gmail.com | 347-882-6333 | Washington, DC Metro
+   - Header MUST include: {profile_display} | {self.profile_email} | {self.profile_phone} | {self.profile_location}
 2. **Cover Letter** (3 paragraphs, professional tone, specific examples from their history)
    - Salutation: "Dear Hiring Team,"
-   - Signature: "Julian Mackler"
+   - Signature: "{self.profile_name}"
 
 Focus on:
 - Matching their proven experience to the job requirements
@@ -177,14 +185,14 @@ Focus on:
             Formatted prompt string
         """
         # User's identity info
-        name = profile.get("name", "Julian Mackler") if profile else "Julian Mackler"
+        name = profile.get("name", self.profile_name) if profile else self.profile_name
         summary = profile.get("summary", "") if profile else ""
-        
+
         user_identity = f"""USER'S IDENTIFYING INFORMATION (USE THIS EXACTLY):
 - Full Name: {name}
-- Email: julianmackler@gmail.com
-- Phone: 347-882-6333
-- Location: Washington, DC Metro
+- Email: {self.profile_email}
+- Phone: {self.profile_phone}
+- Location: {self.profile_location}
 """
         if summary:
             user_identity += f"\nCORE PROFESSIONAL PROFILE (from NotebookLM):\n{summary}\n"
@@ -212,14 +220,14 @@ Based on the user's ACTUAL work history above (from their local documents), crea
    - Uses specific numbers and achievements from their history
    - Is ATS-friendly (clear headings, standard sections, no graphics)
    - Highlights transferable skills
-   - Uses EXACT contact info: Julian (Juju) Mackler | julianmackler@gmail.com | 347-882-6333 | Washington, DC Metro
+   - Uses EXACT contact info: {name} | {self.profile_email} | {self.profile_phone} | {self.profile_location}
 
 2. A 3-paragraph cover letter that:
    - Opens with enthusiasm for the specific role at the specific company
    - Provides 2-3 concrete examples from their actual work history
    - Explains why they're a strong match (based on facts, not fluff)
    - Uses salutation: "Dear Hiring Team,"
-   - Signs off with: "Julian Mackler"
+   - Signs off with: "{name}"
    - NEVER use placeholders like "[Company Name]" - extract company from job description or omit
 
 Remember: ONLY use facts from their actual history. Do not invent experiences.

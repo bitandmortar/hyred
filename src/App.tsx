@@ -16,6 +16,10 @@ import {
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 
+// ─── Config ──────────────────────────────────────────────────────────────────
+const DEFAULT_PROFILE_NAME = import.meta.env.VITE_DEFAULT_PROFILE_NAME || ''
+const DEFAULT_PROFILE_TITLE = import.meta.env.VITE_DEFAULT_PROFILE_TITLE || ''
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 interface Document {
@@ -83,6 +87,8 @@ export default function App() {
   const [generationStatus, setGenerationStatus] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [jobDescription, setJobDescription] = useState('')
+  const [profileName, setProfileName] = useState(DEFAULT_PROFILE_NAME)
+  const [profileTitle, setProfileTitle] = useState(DEFAULT_PROFILE_TITLE)
   const [error, setError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [analyzing, setAnalyzing] = useState<string | null>(null)
@@ -181,8 +187,8 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           job_description: jobDescription,
-          profile_name: 'Julian Mackler', // Could be dynamic
-          profile_title: 'Software Engineer'
+          profile_name: profileName,
+          profile_title: profileTitle
         })
       })
 
@@ -292,12 +298,28 @@ export default function App() {
 
             <div className="flex-1 p-0 relative overflow-y-auto">
                 {view !== 'results' ? (
-                  <textarea 
-                      className="w-full h-full p-10 font-bold text-[13px] leading-relaxed border-none outline-none resize-none placeholder:text-neutral-200"
-                      placeholder="PASTE TARGET JOB DESCRIPTION // NEURAL ALIGNMENT..."
-                      value={jobDescription}
-                      onChange={(e) => setJobDescription(e.target.value)}
-                  />
+                  <div className="w-full h-full flex flex-col">
+                      <div className="flex gap-4 p-4 border-b border-neutral-200">
+                          <input
+                              className="flex-1 p-3 font-bold text-[12px] border border-neutral-200 outline-none focus:border-[#b60020] placeholder:text-neutral-300"
+                              placeholder="YOUR NAME"
+                              value={profileName}
+                              onChange={(e) => setProfileName(e.target.value)}
+                          />
+                          <input
+                              className="flex-1 p-3 font-bold text-[12px] border border-neutral-200 outline-none focus:border-[#b60020] placeholder:text-neutral-300"
+                              placeholder="YOUR TITLE / ROLE"
+                              value={profileTitle}
+                              onChange={(e) => setProfileTitle(e.target.value)}
+                          />
+                      </div>
+                      <textarea
+                          className="flex-1 w-full p-10 font-bold text-[13px] leading-relaxed border-none outline-none resize-none placeholder:text-neutral-200"
+                          placeholder="PASTE TARGET JOB DESCRIPTION // NEURAL ALIGNMENT..."
+                          value={jobDescription}
+                          onChange={(e) => setJobDescription(e.target.value)}
+                      />
+                  </div>
                 ) : (
                   <div className="p-10 prose prose-slate max-w-none prose-sm">
                     {generatedResume ? (

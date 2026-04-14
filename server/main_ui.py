@@ -7,6 +7,7 @@ All processing on-device via Ollama + LanceDB.
 """
 
 import streamlit as st
+import os
 from datetime import datetime
 
 from rag_engine import get_rag_engine
@@ -194,7 +195,7 @@ def initialize_session_state():
     defaults = {
         "rag_engine": None, "llm_agent": None, "watcher_status": "starting",
         "indexed_files": 0, "total_chunks": 0, "generation_result": None,
-        "profile_name": "Julian Mackler", "profile_title": "", "selected_model": "llama3.2",
+        "profile_name": os.environ.get("HYRED_PROFILE_NAME", "Julian Mackler"), "profile_title": "", "selected_model": "llama3.2",
         "tone": 50, "use_notebooklm": True, "company_name": "", "role_name": "",
         "job_description": ""
     }
